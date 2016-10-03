@@ -2,7 +2,7 @@ language: scala
 jdk:
   - oraclejdk8
 scala:
-  - "2.11.7"
+  - "2.11.8"
 before_install:
   - mkdir /tmp/dynamodb
   - wget -O - http://dynamodb-local.s3-website-us-west-2.amazonaws.com/dynamodb_local_latest.tar.gz | tar xzC /tmp/dynamodb
