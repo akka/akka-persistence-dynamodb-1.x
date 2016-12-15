@@ -1,6 +1,8 @@
 DynamoDBJournal for Akka Persistence
 ====================================
 
+[![Join the chat at https://gitter.im/akka/akka-persistence-dynamodb](https://badges.gitter.im/akka/akka-persistence-dynamodb.svg)](https://gitter.im/akka/akka-persistence-dynamodb?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 A replicated [Akka Persistence](http://doc.akka.io/docs/akka/2.4.0/scala/persistence.html) journal backed by
 [Amazon DynamoDB](http://aws.amazon.com/dynamodb/).
 
