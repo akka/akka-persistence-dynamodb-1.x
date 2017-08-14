@@ -2,11 +2,15 @@ DynamoDBJournal for Akka Persistence
 ====================================
 
 A replicated [Akka Persistence](http://doc.akka.io/docs/akka/2.4.0/scala/persistence.html) journal backed by
-[Amazon DynamoDB](http://aws.amazon.com/dynamodb/).
+[Amazon DynamoDB](http://aws.amazon.com/dynamodb/). 
 
-**Please note that this module does neither include a snapshot-store plugin nor an Akka Persistence Query plugin.**
+- This plugin implements both a journal as well as a snapshot store,
+- Please note, however, that it does not include an Akka Persistence Query plugin.
 
-Scala: `2.11.x` or `2.12.1`  Akka: `2.4.14`  Java: `8+`
+Supported versions: 
+- Scala: `2.11.x` or `2.12.x`  
+- Akka: `2.4.14+` and `2.5.x+` (see notes below how to use with 2.5)  
+- Java: `1.8+`
 
 [![Join the chat at https://gitter.im/akka/akka-persistence-dynamodb](https://badges.gitter.im/akka/akka-persistence-dynamodb.svg)](https://gitter.im/akka/akka-persistence-dynamodb?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![Build Status](https://travis-ci.org/akka/akka-persistence-dynamodb.svg?branch=master)](https://travis-ci.org/akka/akka-persistence-dynamodb)
@@ -20,17 +24,15 @@ This plugin is published to the Maven Central repository with the following name
 <dependency>
     <groupId>com.typesafe.akka</groupId>
     <artifactId>akka-persistence-dynamodb_2.11</artifactId>
-    <version>1.0.1</version>
+    <version>1.1.0</version>
 </dependency>
 ~~~
 
 or for sbt users:
 
 ```sbt
-libraryDependencies += "com.typesafe.akka" % "akka-persistence-dynamodb_2.11" % "1.0.1"
+libraryDependencies += "com.typesafe.akka" %% "akka-persistence-dynamodb" % "1.1.0"
 ```
-
-Substitute the `_2.11` suffix by `_2.12` when using Scala version 2.12.1 or greater. This plugin requires Java 8 (just as Akka itself).
 
 Configuration
 -------------
@@ -57,6 +59,8 @@ Before you can use these settings you will have to create a table, e.g. using th
   * a sort key of type Number with name `num`
   
 ### Snapshot store
+(**Since:** `1.1.0`; contributed by [@joost-de-vries](https://github.com/joost-de-vries))
+
 ~~~
 akka.persistence.snapshot-store.plugin = "my-dynamodb-snapshot"
 
@@ -189,7 +193,17 @@ This is somewhat more difficult to code, but offers higher throughput possibilit
 
 When writing an item we typically do not touch the high sequence number storage, only when writing an item with sort key `0` is this done. This implies that reading the highest sequence number will need to first query the sequence shards for the highest multiple of 100 and then send a `Query` for the corresponding P entry’s hash key to find the highest stored sort key number.
 
+Using with Akka 2.5.x
+---------------------
+
+This plugin depends on Akka 2.4, however since [Akka maintains strict backwards compatibility guarantees](http://doc.akka.io/docs/akka/current/scala/common/binary-compatibility-rules.html) across minor versions, 
+it is completely compatible to use this plugin with Akka 2.5.x.
+
+Please make sure to depend on all Akka artifacts (those with the artifact name begining with `akka-*`) are depended on in the same version - as mixing versions is *not* legal. For example, if you depend on Akka Persistence in `2.5.3`, make sure that Akka Streams and Actors are also depended on in the same version. Please always use the latest patch version available (!).
+
 Credits
 -------
 
-Initial development was done by [Scott Clasen](https://github.com/sclasen/akka-persistence-dynamodb). Update to Akka 2.4 and further development up to version 1.0 was kindly sponsored by [Zynga Inc.](https://www.zynga.com/).
+- Initial development was done by [Scott Clasen](https://github.com/sclasen/akka-persistence-dynamodb). 
+- Update to Akka 2.4 and further development up to version 1.0 was kindly sponsored by [Zynga Inc.](https://www.zynga.com/).
+- The snapshot store was contributed by [Joost de Vries](https://github.com/joost-de-vries)
