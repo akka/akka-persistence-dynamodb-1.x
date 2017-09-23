@@ -14,7 +14,7 @@ import scala.concurrent.Future
 
 class DynamoDBSnapshotStore(config: Config) extends SnapshotStore with DynamoDBSnapshotRequests with ActorLogging {
   val settings = new DynamoDBSnapshotConfig(config)
-  def dynamo = dynamoClient(context.system, settings)
+  val dynamo = dynamoClient(context.system, settings)
   val serialization = SerializationExtension(context.system)
   import settings._
 
