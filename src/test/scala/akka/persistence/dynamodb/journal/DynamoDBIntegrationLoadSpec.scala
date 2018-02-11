@@ -210,13 +210,13 @@ class DynamoDBIntegrationLoadSpec
       val view = system.actorOf(Props(classOf[ViewA], "p7-view", persistenceId, probe.ref))
       probe.expectNoMsg(200.millis)
 
-      view ! Update(await = true, replayMax = 3L)
+      view ! Update(await     = true, replayMax = 3L)
       probe.expectMsg(s"a-1")
       probe.expectMsg(s"a-2")
       probe.expectMsg(s"a-3")
       probe.expectNoMsg(200.millis)
 
-      view ! Update(await = true, replayMax = 3L)
+      view ! Update(await     = true, replayMax = 3L)
       probe.expectMsg(s"a-4")
       probe.expectMsg(s"a-5")
       probe.expectMsg(s"a-6")

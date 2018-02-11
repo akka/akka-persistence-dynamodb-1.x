@@ -61,7 +61,7 @@ class FailureReportingSpec extends TestKit(ActorSystem("FailureReportingSpec"))
         .withFallback(ConfigFactory.load())
       implicit val system = ActorSystem("FailureReportingSpec-test1", config)
       try
-        EventFilter[ResourceNotFoundException](pattern = ".*ThisTableDoesNotExist.*", occurrences = 1).intercept {
+        EventFilter[ResourceNotFoundException](pattern     = ".*ThisTableDoesNotExist.*", occurrences = 1).intercept {
           Persistence(system).journalFor("")
         }
       finally system.terminate()
@@ -74,13 +74,13 @@ class FailureReportingSpec extends TestKit(ActorSystem("FailureReportingSpec"))
       implicit val system = ActorSystem("FailureReportingSpec-test2", config)
       try {
         val journal =
-          EventFilter[ResourceNotFoundException](pattern = ".*ThisTableDoesNotExist.*", occurrences = 1).intercept {
-            EventFilter.error(pattern = ".*requests will fail.*ThisTableDoesNotExist.*", occurrences = 1).intercept {
+          EventFilter[ResourceNotFoundException](pattern     = ".*ThisTableDoesNotExist.*", occurrences = 1).intercept {
+            EventFilter.error(pattern     = ".*requests will fail.*ThisTableDoesNotExist.*", occurrences = 1).intercept {
               Persistence(system).journalFor("")
             }
           }
-        EventFilter[ResourceNotFoundException](pattern = ".*BatchGetItemRequest.*", occurrences = 1).intercept {
-          EventFilter[DynamoDBJournalFailure](pattern = s".*failed.*read-highest-sequence-number.*$persistenceId.*", occurrences = 1).intercept {
+        EventFilter[ResourceNotFoundException](pattern     = ".*BatchGetItemRequest.*", occurrences = 1).intercept {
+          EventFilter[DynamoDBJournalFailure](pattern     = s".*failed.*read-highest-sequence-number.*$persistenceId.*", occurrences = 1).intercept {
             journal ! ReplayMessages(0, Long.MaxValue, 0, persistenceId, testActor)
             expectMsgType[ReplayMessagesFailure]
           }
@@ -94,7 +94,7 @@ class FailureReportingSpec extends TestKit(ActorSystem("FailureReportingSpec"))
         .withFallback(ConfigFactory.load())
       implicit val system = ActorSystem("FailureReportingSpec-test3", config)
       try
-        EventFilter.info(pattern = ".*protocol:https.*", occurrences = 1).intercept {
+        EventFilter.info(pattern     = ".*protocol:https.*", occurrences = 1).intercept {
           Persistence(system).journalFor("")
         }
       finally system.terminate()
@@ -115,7 +115,7 @@ akka.loggers = ["akka.testkit.TestEventListener"]
       try {
         val probe = TestProbe()
         system.eventStream.subscribe(probe.ref, classOf[Logging.LogEvent])
-        EventFilter[ResourceNotFoundException](pattern = ".*akka-persistence.*", occurrences = 1).intercept {
+        EventFilter[ResourceNotFoundException](pattern     = ".*akka-persistence.*", occurrences = 1).intercept {
           Persistence(system).journalFor("")
         }
         probe.expectMsgType[Logging.Error].message.toString should include("DescribeTableRequest(akka-persistence)")
@@ -131,21 +131,21 @@ akka.loggers = ["akka.testkit.TestEventListener"]
       implicit val system = ActorSystem("FailureReportingSpec-test5", config)
       try {
         val journal =
-          EventFilter[ResourceNotFoundException](pattern = ".*ThisTableDoesNotExist.*", occurrences = 1).intercept {
-            EventFilter.error(pattern = ".*requests will fail.*ThisTableDoesNotExist.*", occurrences = 1).intercept {
+          EventFilter[ResourceNotFoundException](pattern     = ".*ThisTableDoesNotExist.*", occurrences = 1).intercept {
+            EventFilter.error(pattern     = ".*requests will fail.*ThisTableDoesNotExist.*", occurrences = 1).intercept {
               Persistence(system).journalFor("")
             }
           }
 
         val msgs = (1 to 3).map(i => persistentRepr(f"w-$i"))
 
-        EventFilter[ResourceNotFoundException](pattern = ".*ThisTableDoesNotExist.*", occurrences = 1).intercept {
+        EventFilter[ResourceNotFoundException](pattern     = ".*ThisTableDoesNotExist.*", occurrences = 1).intercept {
           journal ! WriteMessages(AtomicWrite(msgs(0)) :: Nil, testActor, 42)
           expectMsgType[WriteMessagesFailed].cause shouldBe a[DynamoDBJournalFailure]
           expectFailure[DynamoDBJournalFailure]("ThisTableDoesNotExist", msgs(0))
         }
 
-        EventFilter[ResourceNotFoundException](pattern = ".*ThisTableDoesNotExist.*", occurrences = 1).intercept {
+        EventFilter[ResourceNotFoundException](pattern     = ".*ThisTableDoesNotExist.*", occurrences = 1).intercept {
           journal ! WriteMessages(AtomicWrite(msgs(1)) :: AtomicWrite(msgs(2)) :: Nil, testActor, 42)
           expectMsgType[WriteMessagesFailed].cause shouldBe a[DynamoDBJournalFailure]
           expectFailure[DynamoDBJournalFailure]("ThisTableDoesNotExist", msgs(1))

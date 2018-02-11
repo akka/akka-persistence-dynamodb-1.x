@@ -68,8 +68,7 @@ private[dynamodb] trait DynamoDBRequests {
   private def sendUnprocessedItems(
     result:           BatchWriteItemResult,
     retriesRemaining: Int                  = 10,
-    backoff:          FiniteDuration       = 1.millis
-  ): Future[BatchWriteItemResult] = {
+    backoff:          FiniteDuration       = 1.millis): Future[BatchWriteItemResult] = {
     val unprocessed: Int = result.getUnprocessedItems.get(Table) match {
       case null  => 0
       case items => items.size

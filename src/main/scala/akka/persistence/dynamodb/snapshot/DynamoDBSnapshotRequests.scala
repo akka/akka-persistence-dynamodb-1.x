@@ -38,8 +38,7 @@ trait DynamoDBSnapshotRequests extends DynamoDBRequests {
       val result = queryResult.getItems.asScala.map(item => item.get(SequenceNr).getN.toLong)
       doBatch(
         batch => s"execute batch delete $batch",
-        result.map(snapshotDeleteReq(persistenceId, _))
-      )
+        result.map(snapshotDeleteReq(persistenceId, _)))
         .map(toUnit)
     }
   }

@@ -37,19 +37,15 @@ trait DynamoDBUtils {
     .withAttributeDefinitions(
       new AttributeDefinition().withAttributeName(Key).withAttributeType("S"),
       new AttributeDefinition().withAttributeName(SequenceNr).withAttributeType("N"),
-      new AttributeDefinition().withAttributeName(Timestamp).withAttributeType("N")
-    )
+      new AttributeDefinition().withAttributeName(Timestamp).withAttributeType("N"))
     .withKeySchema(
       new KeySchemaElement().withAttributeName(Key).withKeyType(KeyType.HASH),
-      new KeySchemaElement().withAttributeName(SequenceNr).withKeyType(KeyType.RANGE)
-    )
+      new KeySchemaElement().withAttributeName(SequenceNr).withKeyType(KeyType.RANGE))
     .withLocalSecondaryIndexes(
       new LocalSecondaryIndex()
         .withIndexName(TimestampIndex).withKeySchema(
           new KeySchemaElement().withAttributeName(Key).withKeyType(KeyType.HASH),
-          new KeySchemaElement().withAttributeName(Timestamp).withKeyType(KeyType.RANGE)
-        ).withProjection(new Projection().withProjectionType(ProjectionType.ALL))
-    )
+          new KeySchemaElement().withAttributeName(Timestamp).withKeyType(KeyType.RANGE)).withProjection(new Projection().withProjectionType(ProjectionType.ALL)))
 
   def ensureSnapshotTableExists(read: Long = 10L, write: Long = 10L): Unit = {
     val create = schema

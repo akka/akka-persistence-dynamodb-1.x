@@ -105,8 +105,7 @@ trait DynamoDBJournalRequests extends DynamoDBRequests {
   def deleteMessages(persistenceId: String, start: Long, end: Long): Future[Done] =
     doBatch(
       batch => s"execute batch delete $batch",
-      (start to end).map(deleteReq(persistenceId, _))
-    )
+      (start to end).map(deleteReq(persistenceId, _)))
 
   def setHS(persistenceId: String, to: Long): Future[PutItemResult] = {
     val put = putItem(toHSItem(persistenceId, to))
@@ -116,8 +115,7 @@ trait DynamoDBJournalRequests extends DynamoDBRequests {
   def removeHS(persistenceId: String): Future[Done] =
     doBatch(
       _ => s"remove highest sequence number entry for $persistenceId",
-      (0 until SequenceShards).map(deleteHSItem(persistenceId, _))
-    )
+      (0 until SequenceShards).map(deleteHSItem(persistenceId, _)))
 
   def setLS(persistenceId: String, to: Long): Future[PutItemResult] = {
     val put = putItem(toLSItem(persistenceId, to))
@@ -127,8 +125,7 @@ trait DynamoDBJournalRequests extends DynamoDBRequests {
   def removeLS(persistenceId: String): Future[Done] =
     doBatch(
       _ => s"remove lowest sequence number entry for $persistenceId",
-      (0 until SequenceShards).map(deleteLSItem(persistenceId, _))
-    )
+      (0 until SequenceShards).map(deleteLSItem(persistenceId, _)))
 
   /*
    * Request and Item construction helpers.
@@ -220,8 +217,7 @@ trait DynamoDBJournalRequests extends DynamoDBRequests {
   private def sendUnprocessedItems(
     result:           BatchWriteItemResult,
     retriesRemaining: Int                  = 10,
-    backoff:          FiniteDuration       = 1.millis
-  ): Future[BatchWriteItemResult] = {
+    backoff:          FiniteDuration       = 1.millis): Future[BatchWriteItemResult] = {
     val unprocessed: Int = result.getUnprocessedItems.get(JournalTable) match {
       case null  => 0
       case items => items.size
