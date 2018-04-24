@@ -39,5 +39,6 @@ class DynamoDBJournalConfig(c: Config) extends DynamoDBConfig {
     ",MaxBatchGet:" + MaxBatchGet +
     ",MaxBatchWrite:" + MaxBatchWrite +
     ",MaxItemSize:" + MaxItemSize +
-    ",client.config:" + client
+    ",client.config:" + client +
+    ")"
 }
