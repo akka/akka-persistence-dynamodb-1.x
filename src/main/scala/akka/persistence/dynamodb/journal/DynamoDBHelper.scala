@@ -50,7 +50,6 @@ trait DynamoDBHelper {
             p.tryFailure(ex)
           case _ =>
             val n = name
-            log.error(ex, "failure while executing {}", n)
             p.tryFailure(new DynamoDBJournalFailure("failure while executing " + n, ex))
         }
         override def onSuccess(req: In, resp: Out) = p.trySuccess(resp)
@@ -60,7 +59,6 @@ trait DynamoDBHelper {
         func(handler)
       } catch {
         case ex: Throwable =>
-          log.error(ex, "failure while preparing {}", name)
           p.tryFailure(ex)
       }
 
