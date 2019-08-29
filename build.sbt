@@ -4,7 +4,7 @@ scalaVersion       := "2.11.12"
 crossScalaVersions := Seq("2.11.12", "2.12.8")
 crossVersion       := CrossVersion.binary
 
-val akkaVersion = "2.5.23"
+val akkaVersion = "2.5.25"
 val amzVersion = "1.11.602"
 
 libraryDependencies ++= Seq(
