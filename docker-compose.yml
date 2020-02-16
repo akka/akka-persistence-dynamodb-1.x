@@ -1,9 +1,9 @@
 version: '3'
 services:
-  localstack:
-    image: localstack/localstack:0.10.6
+  dynamodb:
+    image: amazon/dynamodb-local
     ports:
-      - '4569:4569' #DDB
+      - '8000:8000' #DDB
     environment:
       SERVICES: 'dynamodb'
       HOSTNAME_EXTERNAL: '${ALLOWED_HOST:-localhost}'
@@ -15,12 +15,12 @@ services:
   dynamosetup:
     image: infrastructureascode/aws-cli
     depends_on:
-      - localstack
+      - dynamodb
     env_file:
       - ./.env.test
     environment:
-      LOCALSTACK_HOST: 'localstack'
-      DDB_PORT: 4569
-    entrypoint: /localstacksetup/entrypoint.sh
+      LOCALSTACK_HOST: 'dynamodb'
+      DDB_PORT: 8000
+    entrypoint: /scripts/entrypoint.sh
     volumes:
-      - './localstacksetup:/localstacksetup'
+      - './scripts:/scripts'
