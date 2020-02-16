@@ -11,25 +11,21 @@ scala:
   - "2.12.9"
   - "2.13.1"
 
-before_install:
-  - curl -sL https://raw.githubusercontent.com/shyiko/jabba/0.11.2/install.sh | bash && . ~/.jabba/jabba.sh
-  - jabba install $TRAVIS_JDK
-
-install: jabba use "$TRAVIS_JDK" && java -Xmx32m -version
-
 before_cache:
   - find $HOME/.ivy2 -name "ivydata-*.properties" -print -delete
   - find $HOME/.sbt  -name "*.lock"               -print -delete
 
 cache:
   directories:
+    - $HOME/.cache/coursier
     - $HOME/.ivy2/cache
-    - $HOME/.sbt/boot
-    - $HOME/.jabba/sdk
+    - $HOME/.sbt
+  timeout: 900
 
 script:
   # make 'git branch' work again
   - git branch -f "$TRAVIS_BRANCH" && git checkout "$TRAVIS_BRANCH"
+  - docker-compose up -d
   - sbt ++$TRAVIS_SCALA_VERSION -jvm-opts .jvmopts-travis -Dakka.test.timefactor=2.0 "; update ; test"
   # check policies, if on master also upload
   - if [[ "$TRAVIS_SECURE_ENV_VARS" == "true" ]]; then if [[ "$TRAVIS_BRANCH" == "master" && "$TRAVIS_EVENT_TYPE" == "push" ]]; then sbt 'set credentials += Credentials("whitesource", "whitesourcesoftware.com", "", System.getenv("WHITESOURCE_KEY"))' whitesourceCheckPolicies whitesourceUpdate; else sbt 'set credentials += Credentials("whitesource", "whitesourcesoftware.com", "", System.getenv("WHITESOURCE_KEY"))' whitesourceCheckPolicies; fi; fi
