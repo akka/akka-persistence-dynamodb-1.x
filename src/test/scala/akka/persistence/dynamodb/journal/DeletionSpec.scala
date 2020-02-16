@@ -6,17 +6,14 @@ package akka.persistence.dynamodb.journal
 import akka.testkit._
 import org.scalactic.TypeCheckedTripleEquals
 import org.scalatest._
-import org.scalatest.matchers.should.Matchers
 import org.scalatest.concurrent.ScalaFutures
 import akka.actor.ActorSystem
 import akka.persistence._
 import akka.persistence.JournalProtocol._
 
-import org.scalatest.wordspec.AnyWordSpecLike
-
 class DeletionSpec extends TestKit(ActorSystem("FailureReportingSpec"))
     with ImplicitSender
-    with AnyWordSpecLike
+    with WordSpecLike
     with BeforeAndAfterAll
     with Matchers
     with ScalaFutures

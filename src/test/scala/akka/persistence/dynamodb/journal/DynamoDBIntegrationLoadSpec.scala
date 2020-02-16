@@ -7,14 +7,8 @@ import java.util.UUID
 import akka.actor._
 import akka.persistence._
 import akka.testkit._
-import com.amazonaws.services.dynamodbv2.model.{ CreateTableRequest, DeleteTableRequest, ListTablesRequest, ProvisionedThroughput }
-import com.typesafe.config.{ Config, ConfigFactory, ConfigValueFactory }
+import com.typesafe.config.ConfigFactory
 import org.scalatest._
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
-import scala.concurrent.Await
-import scala.concurrent.duration._
-import scala.concurrent.Future
 
 /**
  * This class is pulled from https://github.com/krasserm/akka-persistence-cassandra/
@@ -119,7 +113,7 @@ import DynamoDBIntegrationLoadSpec._
 class DynamoDBIntegrationLoadSpec
     extends TestKit(ActorSystem("test", config))
     with ImplicitSender
-    with AnyWordSpecLike
+    with WordSpecLike
     with Matchers
     with BeforeAndAfterAll
     with DynamoDBUtils {
