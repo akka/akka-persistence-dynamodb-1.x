@@ -4,21 +4,23 @@
 package akka.persistence.dynamodb.journal
 
 import akka.testkit._
-import org.scalactic.ConversionCheckedTripleEquals
+import org.scalactic.TypeCheckedTripleEquals
 import org.scalatest._
+import org.scalatest.matchers.should.Matchers
 import org.scalatest.concurrent.ScalaFutures
 import akka.actor.ActorSystem
 import akka.persistence._
 import akka.persistence.JournalProtocol._
-import java.util.UUID
+
+import org.scalatest.wordspec.AnyWordSpecLike
 
 class DeletionSpec extends TestKit(ActorSystem("FailureReportingSpec"))
     with ImplicitSender
-    with WordSpecLike
+    with AnyWordSpecLike
     with BeforeAndAfterAll
     with Matchers
     with ScalaFutures
-    with ConversionCheckedTripleEquals
+    with TypeCheckedTripleEquals
     with DynamoDBUtils {
 
   override def beforeAll(): Unit = ensureJournalTableExists()
@@ -49,14 +51,14 @@ class DeletionSpec extends TestKit(ActorSystem("FailureReportingSpec"))
       val msgs = (1 to 149).map(i => AtomicWrite(persistentRepr(s"a-$i")))
       journal ! WriteMessages(msgs, testActor, 1)
       expectMsg(WriteMessagesSuccessful)
-      (1 to 149) foreach (i => expectMsgType[WriteMessageSuccess].persistent.sequenceNr should ===(i))
+      (1 to 149) foreach (i => expectMsgType[WriteMessageSuccess].persistent.sequenceNr.toInt should ===(i))
       journal ! ListAll(persistenceId, testActor)
       expectMsg(ListAllResult(persistenceId, Set.empty, Set(100L), (1L to 149)))
 
       val more = AtomicWrite((150 to 200).map(i => persistentRepr("b-$i")))
       journal ! WriteMessages(more :: Nil, testActor, 1)
       expectMsg(WriteMessagesSuccessful)
-      (150 to 200) foreach (i => expectMsgType[WriteMessageSuccess].persistent.sequenceNr should ===(i))
+      (150 to 200) foreach (i => expectMsgType[WriteMessageSuccess].persistent.sequenceNr.toInt should ===(i))
       journal ! ListAll(persistenceId, testActor)
       expectMsg(ListAllResult(persistenceId, Set.empty, Set(100L, 200L), (1L to 200)))
     }

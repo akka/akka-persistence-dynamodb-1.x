@@ -5,7 +5,9 @@ package akka.persistence.dynamodb.journal
 
 import org.scalactic.TypeCheckedTripleEquals
 import org.scalatest._
+import org.scalatest.matchers.should.Matchers
 import org.scalatest.concurrent.ScalaFutures
+import org.scalatest.wordspec.AnyWordSpecLike
 import akka.actor.ActorSystem
 import akka.persistence._
 import akka.persistence.JournalProtocol._
@@ -32,7 +34,7 @@ object PartialAsyncSerializationSpec {
 
 class PartialAsyncSerializationSpec extends TestKit(ActorSystem("PartialAsyncSerializationSpec", PartialAsyncSerializationSpec.config))
     with ImplicitSender
-    with WordSpecLike
+    with AnyWordSpecLike
     with BeforeAndAfterAll
     with Matchers
     with ScalaFutures

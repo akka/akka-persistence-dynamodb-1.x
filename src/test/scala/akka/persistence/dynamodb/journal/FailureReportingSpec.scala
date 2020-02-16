@@ -3,29 +3,33 @@
  */
 package akka.persistence.dynamodb.journal
 
+import org.scalactic.TypeCheckedTripleEquals
 import org.scalatest._
+import org.scalatest.matchers.should.Matchers
 import org.scalatest.concurrent.ScalaFutures
-import org.scalactic.ConversionCheckedTripleEquals
+import org.scalatest.wordspec.AnyWordSpecLike
+
 import akka.actor._
 import akka.testkit._
-
-import scala.concurrent.duration._
-import com.typesafe.config.ConfigFactory
-import akka.persistence._
-import com.amazonaws.services.dynamodbv2.model._
 import akka.event.Logging
+import akka.persistence._
 import akka.persistence.JournalProtocol._
 
+import scala.concurrent.duration._
 import scala.collection.JavaConverters._
+
+import com.amazonaws.services.dynamodbv2.model._
+import com.typesafe.config.ConfigFactory
+
 import akka.persistence.dynamodb._
 
 class FailureReportingSpec extends TestKit(ActorSystem("FailureReportingSpec"))
     with ImplicitSender
-    with WordSpecLike
+    with AnyWordSpecLike
     with BeforeAndAfterAll
     with Matchers
     with ScalaFutures
-    with ConversionCheckedTripleEquals
+    with TypeCheckedTripleEquals
     with DynamoDBUtils {
 
   implicit val patience = PatienceConfig(5.seconds)

@@ -3,9 +3,11 @@
  */
 package akka.persistence.dynamodb.journal
 
-import org.scalactic.ConversionCheckedTripleEquals
+import org.scalactic.TypeCheckedTripleEquals
 import org.scalatest._
+import org.scalatest.matchers.should.Matchers
 import org.scalatest.concurrent.ScalaFutures
+import org.scalatest.wordspec.AnyWordSpecLike
 import akka.actor.ActorSystem
 import akka.persistence._
 import akka.persistence.JournalProtocol._
@@ -16,11 +18,11 @@ import akka.persistence.dynamodb._
 
 class RecoveryConsistencySpec extends TestKit(ActorSystem("FailureReportingSpec"))
     with ImplicitSender
-    with WordSpecLike
+    with AnyWordSpecLike
     with BeforeAndAfterAll
     with Matchers
     with ScalaFutures
-    with ConversionCheckedTripleEquals
+    with TypeCheckedTripleEquals
     with DynamoDBUtils {
 
   override def beforeAll(): Unit = ensureJournalTableExists()
@@ -47,7 +49,7 @@ class RecoveryConsistencySpec extends TestKit(ActorSystem("FailureReportingSpec"
       journal ! WriteMessages(writes, testActor, 1)
       journal ! ReplayMessages(1, 0, Long.MaxValue, persistenceId, probe.ref)
       expectMsg(WriteMessagesSuccessful)
-      (1 to messages) foreach (i => expectMsgType[WriteMessageSuccess].persistent.sequenceNr should ===(i))
+      (1 to messages) foreach (i => expectMsgType[WriteMessageSuccess].persistent.sequenceNr.toInt should ===(i))
       probe.expectMsg(RecoverySuccess(messages))
     }
 

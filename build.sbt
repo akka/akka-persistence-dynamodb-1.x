@@ -14,7 +14,7 @@ libraryDependencies ++= Seq(
   "com.typesafe.akka"   %% "akka-stream"            % akkaVersion,
   "com.typesafe.akka"   %% "akka-persistence-tck"   % akkaVersion   % "test",
   "com.typesafe.akka"   %% "akka-testkit"           % akkaVersion   % "test",
-  "org.scalatest"       %% "scalatest"              % "3.0.5"       % "test",
+  "org.scalatest"       %% "scalatest"              % "3.1.0"       % "test",
   "commons-io"          % "commons-io"              % "2.4"         % "test",
   "org.hdrhistogram"    % "HdrHistogram"            % "2.1.8"       % "test"
 )
