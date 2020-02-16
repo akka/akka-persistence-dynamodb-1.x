@@ -7,7 +7,9 @@ import java.util.Base64
 
 import org.scalactic.TypeCheckedTripleEquals
 import org.scalatest._
+import org.scalatest.matchers.should.Matchers
 import org.scalatest.concurrent.ScalaFutures
+import org.scalatest.wordspec.AnyWordSpecLike
 import akka.actor.ActorSystem
 import akka.persistence._
 import akka.persistence.JournalProtocol._
@@ -20,7 +22,7 @@ import com.typesafe.config.ConfigFactory
 
 class BackwardsCompatibilityV1Spec extends TestKit(ActorSystem("PartialAsyncSerializationSpec"))
     with ImplicitSender
-    with WordSpecLike
+    with AnyWordSpecLike
     with BeforeAndAfterAll
     with Matchers
     with ScalaFutures
