@@ -39,6 +39,5 @@ after_failure:
 
 env:
   global:
-    - TRAVIS_JDK=adopt@~1.8.202-08
     # encrypt with: travis encrypt WHITESOURCE_KEY=...
     - secure: "jwupBTd/wXsQK9X9yHP6gLcxhYSwE/ZLhip7+ZMvxLrekpSi3g/tSpu1FQ+jYHdcIFGyaYK7VDFLHm5q8mdqK8epsFYw3+Oh34Ffhde9vHrdhr8hKCrmZe0Ey4UZ2CKew669nzIT5AbjFHm5q0vOo8IpdW+JLqsO2x8EFZkcBxwPWVKIOTUcqmzr4nqFmQabJdDWU1KpEWNn2TXpoM3Q2A8yzqAHcutZSkL5Y7ZSlLIeiAfRybNjQjVCGQBI0tiZdZABerz8ZHns1i72suxJg3nDuPdVkgdfnet4NSuwcy0o1rxjKXVL2xrY1AC1yEeOBKJr7ltLpcN7/iQIq2/mZSQYBadOnd2D+ZsUxDzIGBmT93IYmKuHUUT7fZBpDpR3zop6VuRopLzjsscr2vZnpB0YiK7Kc32+JlWkKSYXVdcCu/TyiqD6LdKlcAnTFsf1j8hIMewak14johZnGvgRa4Ep+J5CaTExTK3DUWg0aCOhfs3BOEJY7VHW/Q/03YlaEGguGu6gzTncgVBdtdFRUje668Z+UBSJRzGnmtBHRVMk2fb1buh1nRnjUaZiu/7ySxwuO9F8oxA1jiO54TGbodLsdgGI/EASjBoxmQ+lKUs3x39DeTXsj/1CJJzwNxBHZ7dDowPRraTBrfVq3aDUA7QGfKBtVmC9NZ2nXB1ExOs="
