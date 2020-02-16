@@ -105,6 +105,12 @@ class FailureReportingSpec extends TestKit(ActorSystem("FailureReportingSpec"))
     "not notify user about config errors when starting the default journal" in {
       val config = ConfigFactory.parseString(
         """
+dynamodb-journal {
+  endpoint = "http://localhost:8000"
+  aws-access-key-id = "AWS_ACCESS_KEY_ID"
+  aws-secret-access-key = "AWS_SECRET_ACCESS_KEY"
+}
+akka.persistence.journal.plugin = "dynamodb-journal"
 akka.persistence.snapshot-store.plugin = "no-snapshot-store"
 akka.loggers = ["akka.testkit.TestEventListener"]
 """)
