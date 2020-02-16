@@ -70,8 +70,7 @@ package object dynamodb {
       override val dynamoDB:  AmazonDynamoDBAsyncClient,
       override val settings:  DynamoDBConfig,
       override val scheduler: Scheduler,
-      override val log:       LoggingAdapter
-    ) extends DynamoDBHelper
+      override val log:       LoggingAdapter) extends DynamoDBHelper
 
     new DynamoDBClient(dispatcher, client, settings, system.scheduler, Logging(system, "DynamoDBClient"))
   }

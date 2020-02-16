@@ -24,8 +24,7 @@ object AsyncDynamoDBJournalSpec {
       |    "java.io.Serializable" = test
       |  }
       |}
-    """.stripMargin
-  ).withFallback(ConfigFactory.load())
+    """.stripMargin).withFallback(ConfigFactory.load())
 
 }
 

@@ -63,8 +63,7 @@ class BackwardsCompatibilityV1Spec extends TestKit(ActorSystem("PartialAsyncSeri
       "ChEIARINrO0ABXQABmEtMDAxNxARGg9PbGRGb3JtYXRFdmVudHNqJDI5NWZhMTE2LWZhOTUtNGY1Yi1hZjk2LTgwZDk4NjFhODk4ZA==",
       "ChEIARINrO0ABXQABmEtMDAxOBASGg9PbGRGb3JtYXRFdmVudHNqJDI5NWZhMTE2LWZhOTUtNGY1Yi1hZjk2LTgwZDk4NjFhODk4ZA==",
       "ChEIARINrO0ABXQABmEtMDAxORATGg9PbGRGb3JtYXRFdmVudHNqJDI5NWZhMTE2LWZhOTUtNGY1Yi1hZjk2LTgwZDk4NjFhODk4ZA==",
-      "ChEIARINrO0ABXQABmEtMDAyMBAUGg9PbGRGb3JtYXRFdmVudHNqJDI5NWZhMTE2LWZhOTUtNGY1Yi1hZjk2LTgwZDk4NjFhODk4ZA=="
-    )
+      "ChEIARINrO0ABXQABmEtMDAyMBAUGg9PbGRGb3JtYXRFdmVudHNqJDI5NWZhMTE2LWZhOTUtNGY1Yi1hZjk2LTgwZDk4NjFhODk4ZA==")
 
     val table = dynamoDB.getTable(tableName)
 
@@ -72,8 +71,7 @@ class BackwardsCompatibilityV1Spec extends TestKit(ActorSystem("PartialAsyncSeri
       table.putItem(
         new Item()
           .withPrimaryKey("par", persistenceId, "num", number)
-          .withBinary("pay", Base64.getDecoder.decode(data))
-      )
+          .withBinary("pay", Base64.getDecoder.decode(data)))
     }
 
     for {

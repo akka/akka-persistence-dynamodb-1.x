@@ -1,0 +1,24 @@
+{
+  "TableName": "${TABLE_NAME}",
+  "KeySchema": [{
+    "AttributeName": "par",
+    "KeyType": "HASH"
+  }, {
+    "AttributeName": "num",
+    "KeyType": "RANGE"
+  }],
+  "AttributeDefinitions": [{
+    "AttributeName": "par",
+    "AttributeType": "S"
+  }, {
+    "AttributeName": "num",
+    "AttributeType": "N"
+  }],
+  "ProvisionedThroughput": {
+    "ReadCapacityUnits": 50,
+    "WriteCapacityUnits": 50
+  },
+  "SSESpecification": {
+    "Enabled": true
+  }
+}

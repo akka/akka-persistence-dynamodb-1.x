@@ -1,0 +1,26 @@
+version: '3'
+services:
+  localstack:
+    image: localstack/localstack:0.10.6
+    ports:
+      - '4569:4569' #DDB
+    environment:
+      SERVICES: 'dynamodb'
+      HOSTNAME_EXTERNAL: '${ALLOWED_HOST:-localhost}'
+      DOCKER_HOST: 'unix:///var/run/docker.sock'
+    env_file:
+      - ./.env.test
+    volumes:
+      - '/var/run/docker.sock:/var/run/docker.sock'
+  dynamosetup:
+    image: infrastructureascode/aws-cli
+    depends_on:
+      - localstack
+    env_file:
+      - ./.env.test
+    environment:
+      LOCALSTACK_HOST: 'localstack'
+      DDB_PORT: 4569
+    entrypoint: /localstacksetup/entrypoint.sh
+    volumes:
+      - './localstacksetup:/localstacksetup'

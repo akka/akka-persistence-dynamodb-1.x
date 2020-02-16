@@ -1,9 +1,0 @@
-#!/bin/bash
-
-ROOT=$(cd $(dirname $0)/..; pwd)
-
-mkdir -p $ROOT/dynamodb-local
-
-cd $ROOT/dynamodb-local
-
-curl -L http://dynamodb-local.s3-website-us-west-2.amazonaws.com/dynamodb_local_latest.tar.gz | tar xz

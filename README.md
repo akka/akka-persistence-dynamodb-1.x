@@ -9,7 +9,7 @@ A replicated [Akka Persistence](http://doc.akka.io/docs/akka/2.4.0/scala/persist
 
 Supported versions: 
 - Scala: `2.11.x` or `2.12.x`  
-- Akka: `2.4.14+` and `2.5.x+` (see notes below how to use with 2.5)  
+- Akka: `2.4.14+` and `2.5.x+` and `2.6.x+` (see notes below how to use with 2.5)  
 - Java: `1.8+`
 
 [![Join the chat at https://gitter.im/akka/akka-persistence-dynamodb](https://badges.gitter.im/akka/akka-persistence-dynamodb.svg)](https://gitter.im/akka/akka-persistence-dynamodb?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
@@ -122,9 +122,10 @@ Plugin Development
 
 ### Dev Setup
 
-* Run `./scripts/dev-setup.sh` to download and start [DynamoDB-local](http://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Tools.DynamoDBLocal.html).
+* Run `./docker-compose up` to download and start [Localstack](https://github.com/localstack/localstack/).
+* Make sure that env variables from .env.test are exported `source .env.test`
 * Now you are all set for running the test suite from `sbt`.
-* In order to stop the DynamoDB process you may execute `./scripts/kill-dynamoDB.sh`.
+* In order to stop the DynamoDB and clean up execute `./docker-compose down`.
 
 Please also read the [CONTRIBUTING.md](CONTRIBUTING.md) file.
 
@@ -132,7 +133,7 @@ Please also read the [CONTRIBUTING.md](CONTRIBUTING.md) file.
 
 The structure for journal storage in dynamodb has evolved over iterations of performance tuning. Most of these lessons were learned in creating the eventsourced dynamodb journal, but apply here as well.
 
-##### Naïve structure
+##### Naive structure
 
 When initially modelling journal storage in dynamo, it seems natural to use a simple structure similar to this
 

@@ -27,8 +27,7 @@ object PartialAsyncSerializationSpec {
       |    "akka.persistence.dynamodb.journal.SerializeAsync" = test
       |  }
       |}
-    """.stripMargin
-  ).withFallback(ConfigFactory.load())
+    """.stripMargin).withFallback(ConfigFactory.load())
 }
 
 class PartialAsyncSerializationSpec extends TestKit(ActorSystem("PartialAsyncSerializationSpec", PartialAsyncSerializationSpec.config))

@@ -46,11 +46,9 @@ package object journal {
   val schema = new CreateTableRequest()
     .withKeySchema(
       new KeySchemaElement().withAttributeName(Key).withKeyType(KeyType.HASH),
-      new KeySchemaElement().withAttributeName(Sort).withKeyType(KeyType.RANGE)
-    )
+      new KeySchemaElement().withAttributeName(Sort).withKeyType(KeyType.RANGE))
     .withAttributeDefinitions(
       new AttributeDefinition().withAttributeName(Key).withAttributeType("S"),
-      new AttributeDefinition().withAttributeName(Sort).withAttributeType("N")
-    )
+      new AttributeDefinition().withAttributeName(Sort).withAttributeType("N"))
 
 }

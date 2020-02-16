@@ -1,0 +1,40 @@
+{
+  "TableName": "${TABLE_NAME}",
+  "KeySchema": [{
+    "AttributeName": "par",
+    "KeyType": "HASH"
+  }, {
+    "AttributeName": "seq",
+    "KeyType": "RANGE"
+  }],
+  "AttributeDefinitions": [{
+    "AttributeName": "par",
+    "AttributeType": "S"
+  }, {
+    "AttributeName": "seq",
+    "AttributeType": "N"
+  }, {
+    "AttributeName": "ts",
+    "AttributeType": "N"
+  }],
+  "LocalSecondaryIndexes": [{
+    "IndexName": "ts-idx",
+    "KeySchema": [{
+      "AttributeName": "par",
+      "KeyType": "HASH"
+    }, {
+      "AttributeName": "ts",
+      "KeyType": "RANGE"
+    }],
+    "Projection": {
+      "ProjectionType": "ALL"
+    }
+  }],
+  "ProvisionedThroughput": {
+    "ReadCapacityUnits": 50,
+    "WriteCapacityUnits": 50
+  },
+  "SSESpecification": {
+    "Enabled": true
+  }
+}

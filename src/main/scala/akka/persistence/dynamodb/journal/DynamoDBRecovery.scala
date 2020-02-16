@@ -118,8 +118,7 @@ trait DynamoDBRecovery extends AsyncRecovery { this: DynamoDBJournal =>
     persistenceId:  String,
     fromSequenceNr: Long,
     toSequenceNr:   Long,
-    max:            Long
-  )(replayCallback: (PersistentRepr) => Unit): Future[Unit] =
+    max:            Long)(replayCallback: (PersistentRepr) => Unit): Future[Unit] =
     logFailure(s"replay for $persistenceId ($fromSequenceNr to $toSequenceNr)") {
       log.debug("starting replay for {} from {} to {} (max {})", persistenceId, fromSequenceNr, toSequenceNr, max)
       // toSequenceNr is already capped to highest and guaranteed to be no less than fromSequenceNr
@@ -212,8 +211,7 @@ trait DynamoDBRecovery extends AsyncRecovery { this: DynamoDBJournal =>
   def readAllSequenceNr(persistenceId: String, highest: Boolean): Future[Set[Long]] =
     Future.sequence(
       readSequenceNrBatches(persistenceId, highest)
-        .map(_.map(getAllSeqNr).recover { case ex: Throwable => Nil })
-    )
+        .map(_.map(getAllSeqNr).recover { case ex: Throwable => Nil }))
       .map(_.flatten.toSet)
 
   def readSequenceNrBatches(persistenceId: String, highest: Boolean): Iterator[Future[BatchGetItemResult]] =
@@ -298,8 +296,7 @@ trait DynamoDBRecovery extends AsyncRecovery { this: DynamoDBJournal =>
           persistenceId = pI,
           manifest      = reprManifest,
           writerUuid    = wU,
-          sender        = null
-        )
+          sender        = null)
       }
 
     } else {
