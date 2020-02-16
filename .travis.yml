@@ -1,7 +1,10 @@
 # reference: https://github.com/akka/akka/blob/master/.travis.yml
 language: scala
-
 sudo: false
+jdk: oraclejdk8
+
+services:
+  - docker
 
 scala:
   - "2.11.12"
@@ -11,9 +14,6 @@ scala:
 before_install:
   - curl -sL https://raw.githubusercontent.com/shyiko/jabba/0.11.2/install.sh | bash && . ~/.jabba/jabba.sh
   - jabba install $TRAVIS_JDK
-  - mkdir /tmp/dynamodb
-  - wget -O - http://dynamodb-local.s3-website-us-west-2.amazonaws.com/dynamodb_local_latest.tar.gz | tar xzC /tmp/dynamodb
-  - java -Djava.library.path=/tmp/dynamodb/DynamoDBLocal_lib -Xss1m -Xms320m -Xmx320m -jar /tmp/dynamodb/DynamoDBLocal.jar -inMemory &
 
 install: jabba use "$TRAVIS_JDK" && java -Xmx32m -version
 
@@ -33,6 +33,9 @@ script:
   - sbt ++$TRAVIS_SCALA_VERSION -jvm-opts .jvmopts-travis -Dakka.test.timefactor=2.0 "; update ; test"
   # check policies, if on master also upload
   - if [[ "$TRAVIS_SECURE_ENV_VARS" == "true" ]]; then if [[ "$TRAVIS_BRANCH" == "master" && "$TRAVIS_EVENT_TYPE" == "push" ]]; then sbt 'set credentials += Credentials("whitesource", "whitesourcesoftware.com", "", System.getenv("WHITESOURCE_KEY"))' whitesourceCheckPolicies whitesourceUpdate; else sbt 'set credentials += Credentials("whitesource", "whitesourcesoftware.com", "", System.getenv("WHITESOURCE_KEY"))' whitesourceCheckPolicies; fi; fi
+
+after_failure:
+  - docker-compose logs
 
 env:
   global:

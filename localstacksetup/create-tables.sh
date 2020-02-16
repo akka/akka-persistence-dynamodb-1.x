@@ -17,4 +17,3 @@ aws dynamodb create-table \
    --cli-input-json "$SNAPSHOT_JSON" \
    --endpoint-url "$DYNAMODB_ENDPOINT" \
    --region "$AWS_REGION"
-
