@@ -3,7 +3,7 @@
  */
 package akka.persistence.dynamodb.snapshot
 
-import akka.persistence.dynamodb.{ ClientConfig, DynamoDBClientConfig, DynamoDBConfig }
+import akka.persistence.dynamodb.DynamoDBConfig
 import com.typesafe.config.Config
 
 class DynamoDBSnapshotConfig(c: Config) extends DynamoDBConfig {
@@ -22,7 +22,7 @@ class DynamoDBSnapshotConfig(c: Config) extends DynamoDBConfig {
     ",AwsKey:" + AwsKey +
     ",Endpoint:" + Endpoint + ")"
 
-  override val client: ClientConfig = new DynamoDBClientConfig(c)
+  // override val client: ClientConfig = new DynamoDBClientConfig(c)
 
   override val ClientDispatcher = c getString "client-dispatcher"
   override val Tracing = c getBoolean "tracing"

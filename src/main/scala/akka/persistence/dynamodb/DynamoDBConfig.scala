@@ -7,18 +7,19 @@ import java.net.InetAddress
 
 import akka.persistence.dynamodb.journal.DynamoDBHelper
 import akka.serialization.Serialization
-import com.amazonaws.{ ClientConfiguration, Protocol }
+// import com.amazonaws.{ ClientConfiguration, Protocol }
 import com.typesafe.config.Config
 
-trait ClientConfig {
+/* trait ClientConfig {
   val config: ClientConfiguration
-}
+} */
+
 trait DynamoDBConfig {
   val AwsKey: String
   val AwsSecret: String
   val Endpoint: String
   val ClientDispatcher: String
-  val client: ClientConfig
+  // val client: ClientConfig
   val Tracing: Boolean
   val MaxBatchGet: Int
   val MaxBatchWrite: Int
@@ -28,7 +29,7 @@ trait DynamoDBConfig {
 
 }
 
-class DynamoDBClientConfig(c: Config) extends ClientConfig {
+class DynamoDBClientConfig(c: Config) { //extends ClientConfig {
   private val cc = c getConfig "aws-client-config"
   private def get[T](path: String, extract: (Config, String) => T, set: T => Unit): Unit =
     if (cc.getString(path) == "default") ()
@@ -40,9 +41,9 @@ class DynamoDBClientConfig(c: Config) extends ClientConfig {
 
   private var foundSettings = List.empty[String]
   override lazy val toString: String = foundSettings.reverse.mkString("{", ",", "}")
-  val config = new ClientConfiguration
+  // val config = new ClientConfiguration
 
-  get("client-execution-timeout", _.getInt(_), config.setClientExecutionTimeout)
+  /*get("client-execution-timeout", _.getInt(_), config.setClientExecutionTimeout)
   get("connection-max-idle-millis", _.getLong(_), config.setConnectionMaxIdleMillis)
   get("connection-timeout", _.getInt(_), config.setConnectionTimeout)
   get("connection-ttl", _.getLong(_), config.setConnectionTTL)
@@ -70,5 +71,5 @@ class DynamoDBClientConfig(c: Config) extends ClientConfig {
   get("use-gzip", _.getBoolean(_), config.setUseExpectContinue)
   get("use-reaper", _.getBoolean(_), config.setUseReaper)
   get("use-tcp-keepalive", _.getBoolean(_), config.setUseTcpKeepAlive)
-  get("user-agent", _.getString(_), config.setUserAgent)
+  get("user-agent", _.getString(_), config.setUserAgent) */
 }
