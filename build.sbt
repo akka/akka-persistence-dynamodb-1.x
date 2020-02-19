@@ -7,7 +7,7 @@ crossVersion       := CrossVersion.binary
 val akkaVersion = "2.5.29"
 val amzVersion = "1.11.602"
 
-scalacOptions += "-target:8"
+scalacOptions += "-target:jvm-1.8"
 
 libraryDependencies ++= Seq(
   "software.amazon.awssdk" % "dynamodb"             % amzVersion,
