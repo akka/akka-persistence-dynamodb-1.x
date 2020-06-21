@@ -3,15 +3,9 @@
  */
 package akka.persistence.dynamodb.snapshot
 
-import akka.actor.{ ActorRef, ActorSystem }
-import akka.persistence._
-import akka.persistence.SnapshotProtocol._
-import akka.persistence.scalatest.OptionalTests
 import akka.persistence.snapshot.SnapshotStoreSpec
-import akka.testkit.TestProbe
-import com.typesafe.config.{ Config, ConfigFactory }
 
-import scala.collection.immutable.Seq
+import com.typesafe.config.ConfigFactory
 
 class SnapshotStoreTckSpec extends SnapshotStoreSpec(
   ConfigFactory.load()) with DynamoDBUtils {

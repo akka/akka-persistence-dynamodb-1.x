@@ -9,6 +9,10 @@ import org.scalatest.concurrent.ScalaFutures
 
 import akka.actor._
 import akka.testkit._
+
+import scala.concurrent.duration._
+import com.typesafe.config.ConfigFactory
+import akka.persistence._
 import akka.event.Logging
 import akka.persistence._
 import akka.persistence.JournalProtocol._
@@ -16,10 +20,8 @@ import akka.persistence.JournalProtocol._
 import scala.concurrent.duration._
 import scala.collection.JavaConverters._
 
-import com.amazonaws.services.dynamodbv2.model._
-import com.typesafe.config.ConfigFactory
-
 import akka.persistence.dynamodb._
+import software.amazon.awssdk.services.dynamodb.model._
 
 class FailureReportingSpec extends TestKit(ActorSystem("FailureReportingSpec"))
     with ImplicitSender
@@ -196,13 +198,13 @@ akka.loggers = ["akka.testkit.TestEventListener"]
       val key2Item = Map(Key -> S("The2Key"), Sort -> N("43")).asJava
 
       "reporting table problems" in {
-        val aws = new DescribeTableRequest().withTableName("TheTable")
+        val aws = DescribeTableRequest.builder().tableName("TheTable").build()
         desc(aws) should include("DescribeTable")
         desc(aws) should include("TheTable")
       }
 
       "reporting putItem problems" in {
-        val aws = new PutItemRequest().withTableName("TheTable").withItem(keyItem)
+        val aws = PutItemRequest.builder().tableName("TheTable").item(keyItem).build()
         desc(aws) should include("PutItem")
         desc(aws) should include("TheTable")
         desc(aws) should include("TheKey")
@@ -210,7 +212,7 @@ akka.loggers = ["akka.testkit.TestEventListener"]
       }
 
       "reporting deleteItem problems" in {
-        val aws = new DeleteItemRequest().withTableName("TheTable").withKey(keyItem)
+        val aws = DeleteItemRequest.builder().tableName("TheTable").key(keyItem).build()
         desc(aws) should include("DeleteItem")
         desc(aws) should include("TheTable")
         desc(aws) should include("TheKey")
@@ -218,16 +220,19 @@ akka.loggers = ["akka.testkit.TestEventListener"]
       }
 
       "reporting query problems" in {
-        val aws = new QueryRequest().withTableName("TheTable").withExpressionAttributeValues(Map(":kkey" -> S("TheKey")).asJava)
+        val aws = QueryRequest.builder().tableName("TheTable")
+          .expressionAttributeValues(Map(":kkey" -> S("TheKey")).asJava).build()
         desc(aws) should include("Query")
         desc(aws) should include("TheTable")
         desc(aws) should include("TheKey")
       }
 
       "reporting batch write problems" in {
-        val write = new WriteRequest().withPutRequest(new PutRequest().withItem(keyItem))
-        val remove = new WriteRequest().withDeleteRequest(new DeleteRequest().withKey(key2Item))
-        val aws = new BatchWriteItemRequest().withRequestItems(Map("TheTable" -> Seq(write, remove).asJava).asJava)
+        val write = WriteRequest.builder().putRequest(
+          PutRequest.builder().item(keyItem).build()).build()
+        val remove = WriteRequest.builder().deleteRequest(
+          DeleteRequest.builder().key(key2Item).build()).build()
+        val aws = BatchWriteItemRequest.builder().requestItems(Map("TheTable" -> Seq(write, remove).asJava).asJava).build()
         desc(aws) should include("BatchWriteItem")
         desc(aws) should include("TheTable")
         desc(aws) should include("put[par=TheKey,num=42]")
@@ -235,8 +240,8 @@ akka.loggers = ["akka.testkit.TestEventListener"]
       }
 
       "reporting batch read problems" in {
-        val ka = new KeysAndAttributes().withKeys(keyItem, key2Item)
-        val aws = new BatchGetItemRequest().withRequestItems(Map("TheTable" -> ka).asJava)
+        val ka = KeysAndAttributes.builder().keys(keyItem, key2Item).build()
+        val aws = BatchGetItemRequest.builder().requestItems(Map("TheTable" -> ka).asJava).build()
         desc(aws) should include("BatchGetItem")
         desc(aws) should include("TheTable")
         desc(aws) should include("TheKey")

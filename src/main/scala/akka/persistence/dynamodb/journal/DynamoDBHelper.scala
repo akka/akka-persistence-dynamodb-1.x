@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2016 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2020 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.persistence.dynamodb.journal
 
@@ -30,7 +30,7 @@ trait DynamoDBHelper {
   val settings: DynamoDBConfig
   import settings._
 
-  // def shutdown(): Unit = dynamoDB..shutdown()
+  def shutdown(): Unit = dynamoDB.close()
 
   private var reporter: ActorRef = _
   def setReporter(ref: ActorRef): Unit = reporter = ref

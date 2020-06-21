@@ -3,6 +3,8 @@
  */
 package akka.persistence.dynamodb.journal
 
+import java.net.URI
+import java.util
 import java.util.Base64
 
 import org.scalactic.TypeCheckedTripleEquals
@@ -12,11 +14,14 @@ import akka.actor.ActorSystem
 import akka.persistence._
 import akka.persistence.JournalProtocol._
 import akka.testkit._
-import com.amazonaws.auth.BasicAWSCredentials
-import com.amazonaws.regions.Regions
-import com.amazonaws.services.dynamodbv2.{ AmazonDynamoDB, AmazonDynamoDBClient }
-import com.amazonaws.services.dynamodbv2.document.{ DynamoDB, Item }
+import software.amazon.awssdk.auth.credentials.{ AwsBasicCredentials, StaticCredentialsProvider }
+import software.amazon.awssdk.regions.Region
+import software.amazon.awssdk.services.dynamodb._
+import software.amazon.awssdk.services.dynamodb.model._
+
 import com.typesafe.config.ConfigFactory
+
+import akka.persistence.dynamodb._
 
 class BackwardsCompatibilityV1Spec extends TestKit(ActorSystem("PartialAsyncSerializationSpec"))
     with ImplicitSender
@@ -34,12 +39,14 @@ class BackwardsCompatibilityV1Spec extends TestKit(ActorSystem("PartialAsyncSeri
     val accesKey = config.getString("my-dynamodb-journal.aws-access-key-id")
     val secretKey = config.getString("my-dynamodb-journal.aws-secret-access-key")
 
-    val client: AmazonDynamoDB = new AmazonDynamoDBClient(new BasicAWSCredentials(accesKey, secretKey))
-      .withRegion(Regions.US_EAST_1)
+    /*
+    val client: DynamoDbAsyncClient = DynamoDbAsyncClient.builder()
+      .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create(accesKey, secretKey)))
+      .region(Region.US_EAST_1)
+      .endpointOverride(new URI(endpoint))
+      .build()
 
-    client.setEndpoint(endpoint)
-
-    val dynamoDB = new DynamoDB(client)
+     */
 
     val persistenceId = "journal-P-OldFormatEvents-0"
 
@@ -65,13 +72,13 @@ class BackwardsCompatibilityV1Spec extends TestKit(ActorSystem("PartialAsyncSeri
       "ChEIARINrO0ABXQABmEtMDAxORATGg9PbGRGb3JtYXRFdmVudHNqJDI5NWZhMTE2LWZhOTUtNGY1Yi1hZjk2LTgwZDk4NjFhODk4ZA==",
       "ChEIARINrO0ABXQABmEtMDAyMBAUGg9PbGRGb3JtYXRFdmVudHNqJDI5NWZhMTE2LWZhOTUtNGY1Yi1hZjk2LTgwZDk4NjFhODk4ZA==")
 
-    val table = dynamoDB.getTable(tableName)
-
     def createItem(number: Int, data: String): Unit = {
-      table.putItem(
-        new Item()
-          .withPrimaryKey("par", persistenceId, "num", number)
-          .withBinary("pay", Base64.getDecoder.decode(data)))
+      val item: Item = new util.HashMap()
+      item.put(Key, S(persistenceId))
+      item.put(Sort, N(number))
+      item.put(Payload, B(Base64.getDecoder.decode(data)))
+
+      client.putItem(PutItemRequest.builder().tableName(tableName).item(item).build())
     }
 
     for {
