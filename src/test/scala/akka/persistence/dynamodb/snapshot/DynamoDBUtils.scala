@@ -6,10 +6,8 @@ package akka.persistence.dynamodb.snapshot
 import java.util.UUID
 
 import akka.actor.ActorSystem
-import akka.persistence.PersistentRepr
 import akka.util.Timeout
-import com.amazonaws.services.dynamodbv2.model._
-
+import software.amazon.awssdk.services.dynamodb.model._
 import scala.collection.JavaConverters._
 import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration._
@@ -31,37 +29,37 @@ trait DynamoDBUtils {
 
   implicit val timeout = Timeout(5.seconds)
 
-  import com.amazonaws.services.dynamodbv2.model.{ KeySchemaElement, KeyType }
-
-  val schema = new CreateTableRequest()
-    .withAttributeDefinitions(
-      new AttributeDefinition().withAttributeName(Key).withAttributeType("S"),
-      new AttributeDefinition().withAttributeName(SequenceNr).withAttributeType("N"),
-      new AttributeDefinition().withAttributeName(Timestamp).withAttributeType("N"))
-    .withKeySchema(
-      new KeySchemaElement().withAttributeName(Key).withKeyType(KeyType.HASH),
-      new KeySchemaElement().withAttributeName(SequenceNr).withKeyType(KeyType.RANGE))
-    .withLocalSecondaryIndexes(
-      new LocalSecondaryIndex()
-        .withIndexName(TimestampIndex).withKeySchema(
-          new KeySchemaElement().withAttributeName(Key).withKeyType(KeyType.HASH),
-          new KeySchemaElement().withAttributeName(Timestamp).withKeyType(KeyType.RANGE)).withProjection(new Projection().withProjectionType(ProjectionType.ALL)))
+  val schema = CreateTableRequest.builder()
+    .attributeDefinitions(
+      AttributeDefinition.builder().attributeName(Key).attributeType("S").build(),
+      AttributeDefinition.builder().attributeName(SequenceNr).attributeType("N").build(),
+      AttributeDefinition.builder().attributeName(Timestamp).attributeType("N").build()).keySchema(
+        KeySchemaElement.builder().attributeName(Key).keyType(KeyType.HASH).build(),
+        KeySchemaElement.builder().attributeName(SequenceNr).keyType(KeyType.RANGE).build()).localSecondaryIndexes(
+          LocalSecondaryIndex.builder()
+            .indexName(TimestampIndex)
+            .keySchema(
+              KeySchemaElement.builder().attributeName(Key).keyType(KeyType.HASH).build(),
+              KeySchemaElement.builder().attributeName(Timestamp).keyType(KeyType.RANGE).build())
+            .projection(
+              Projection.builder().projectionType(ProjectionType.ALL).build()).build())
 
   def ensureSnapshotTableExists(read: Long = 10L, write: Long = 10L): Unit = {
     val create = schema
-      .withTableName(Table)
-      .withProvisionedThroughput(new ProvisionedThroughput(read, write))
+      .tableName(Table)
+      .provisionedThroughput(ProvisionedThroughput.builder().readCapacityUnits(read).writeCapacityUnits(write).build())
+      .build()
 
     var names = Vector.empty[String]
-    lazy val complete: ListTablesResult => Future[Vector[String]] = aws =>
-      if (aws.getLastEvaluatedTableName == null) Future.successful(names ++ aws.getTableNames.asScala)
+    lazy val complete: ListTablesResponse => Future[Vector[String]] = aws =>
+      if (aws.lastEvaluatedTableName() == null) Future.successful(names ++ aws.tableNames().asScala)
       else {
-        names ++= aws.getTableNames.asScala
+        names ++= aws.tableNames().asScala
         client
-          .listTables(new ListTablesRequest().withExclusiveStartTableName(aws.getLastEvaluatedTableName))
+          .listTables(ListTablesRequest.builder().exclusiveStartTableName(aws.lastEvaluatedTableName).build())
           .flatMap(complete)
       }
-    val list = client.listTables(new ListTablesRequest).flatMap(complete)
+    val list = client.listTables(ListTablesRequest.builder().build()).flatMap(complete)
 
     val setup = for {
       exists <- list.map(_ contains Table)

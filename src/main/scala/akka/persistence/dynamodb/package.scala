@@ -3,16 +3,19 @@
  */
 package akka.persistence
 
-import java.nio.ByteBuffer
+import java.net.URI
 import java.util.concurrent.Executors
 
 import akka.actor.{ ActorSystem, Scheduler }
 import akka.event.{ Logging, LoggingAdapter }
 import akka.persistence.dynamodb.journal.DynamoDBHelper
-import com.amazonaws.auth.BasicAWSCredentials
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDBAsyncClient
-import com.amazonaws.services.dynamodbv2.model.{ AttributeValue, AttributeValueUpdate }
 import java.util.{ Map => JMap }
+
+import software.amazon.awssdk.auth.credentials.{ AwsBasicCredentials, StaticCredentialsProvider }
+import software.amazon.awssdk.core.SdkBytes
+import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient
+import software.amazon.awssdk.services.dynamodb.model.{ AttributeValue, AttributeValueUpdate }
+
 import scala.collection.generic.CanBuildFrom
 import scala.concurrent.{ ExecutionContext, Future, Promise }
 import scala.util.{ Failure, Success, Try }
@@ -21,13 +24,13 @@ package object dynamodb {
   type Item = JMap[String, AttributeValue]
   type ItemUpdates = JMap[String, AttributeValueUpdate]
 
-  def S(value: String): AttributeValue = new AttributeValue().withS(value)
+  def S(value: String): AttributeValue = AttributeValue.builder().s(value).build()
 
-  def N(value: Long): AttributeValue = new AttributeValue().withN(value.toString)
-  def N(value: String): AttributeValue = new AttributeValue().withN(value)
+  def N(value: Long): AttributeValue = AttributeValue.builder().n(value.toString).build()
+  def N(value: String): AttributeValue = AttributeValue.builder().n(value).build()
   val Naught = N(0)
 
-  def B(value: Array[Byte]): AttributeValue = new AttributeValue().withB(ByteBuffer.wrap(value))
+  def B(value: Array[Byte]): AttributeValue = AttributeValue.builder().b(SdkBytes.fromByteArray(value)).build()
 
   def lift[T](f: Future[T]): Future[Try[T]] = {
     val p = Promise[Try[T]]
@@ -53,21 +56,25 @@ package object dynamodb {
     }.map(_.result())
 
   def dynamoClient(system: ActorSystem, settings: DynamoDBConfig): DynamoDBHelper = {
-    val client =
-      if (settings.AwsKey.nonEmpty && settings.AwsSecret.nonEmpty) {
-        val conns = settings.client.config.getMaxConnections
-        val executor = Executors.newFixedThreadPool(conns)
-        val creds = new BasicAWSCredentials(settings.AwsKey, settings.AwsSecret)
-        new AmazonDynamoDBAsyncClient(creds, settings.client.config, executor)
-      } else {
-        new AmazonDynamoDBAsyncClient(settings.client.config)
-      }
-    client.setEndpoint(settings.Endpoint)
+    val dynamoDBClientBuilder = DynamoDbAsyncClient.builder()
+
+    if (settings.AwsKey.nonEmpty && settings.AwsSecret.nonEmpty) {
+      // val conns = settings.client.config.getMaxConnections
+      // val executor = Executors.newFixedThreadPool(conns)
+      val creds = AwsBasicCredentials.create(settings.AwsKey, settings.AwsSecret)
+      dynamoDBClientBuilder.credentialsProvider(StaticCredentialsProvider.create(creds))
+
+    }
+    // new AmazonDynamoDBAsyncClient(settings.client.config)
+    dynamoDBClientBuilder.endpointOverride(URI.create(settings.Endpoint))
+
+    val client = dynamoDBClientBuilder.build()
+
     val dispatcher = system.dispatchers.lookup(settings.ClientDispatcher)
 
     class DynamoDBClient(
       override val ec:        ExecutionContext,
-      override val dynamoDB:  AmazonDynamoDBAsyncClient,
+      override val dynamoDB:  DynamoDbAsyncClient,
       override val settings:  DynamoDBConfig,
       override val scheduler: Scheduler,
       override val log:       LoggingAdapter) extends DynamoDBHelper

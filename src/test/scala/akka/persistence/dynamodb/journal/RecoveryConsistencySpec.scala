@@ -10,9 +10,10 @@ import akka.actor.ActorSystem
 import akka.persistence._
 import akka.persistence.JournalProtocol._
 import akka.testkit._
-import com.amazonaws.services.dynamodbv2.model._
 import java.util.{ HashMap => JHMap }
+
 import akka.persistence.dynamodb._
+import software.amazon.awssdk.services.dynamodb.model.DeleteItemRequest
 
 class RecoveryConsistencySpec extends TestKit(ActorSystem("FailureReportingSpec"))
     with ImplicitSender
@@ -151,6 +152,6 @@ class RecoveryConsistencySpec extends TestKit(ActorSystem("FailureReportingSpec"
     val key: Item = new JHMap
     key.put(Key, S(s"$JournalName-P-$persistenceId-${num / 100}"))
     key.put(Sort, N(num % 100))
-    client.deleteItem(new DeleteItemRequest().withTableName(JournalTable).withKey(key)).futureValue
+    client.deleteItem(DeleteItemRequest.builder().tableName(JournalTable).key(key).build())
   }
 }

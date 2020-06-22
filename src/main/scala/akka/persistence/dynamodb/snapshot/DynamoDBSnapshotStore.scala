@@ -23,8 +23,8 @@ class DynamoDBSnapshotStore(config: Config) extends SnapshotStore with DynamoDBS
     self ! DynamoDBSnapshotStore.Init
   }
 
-  override def postStop(): Unit =
-    dynamo.shutdown()
+  override def postStop(): Unit = ()
+  // dynamo.shutdown()
 
   override def loadAsync(persistenceId: String, criteria: SnapshotSelectionCriteria): Future[Option[SelectedSnapshot]] =
     load(persistenceId, criteria)

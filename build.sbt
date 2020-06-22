@@ -1,15 +1,16 @@
 name := "akka-persistence-dynamodb"
 
 scalaVersion       := "2.11.12"
-crossScalaVersions := Seq("2.11.12", "2.12.8", "2.13.0")
+crossScalaVersions := Seq("2.11.12", "2.12.8", "2.13.1")
 crossVersion       := CrossVersion.binary
 
 val akkaVersion = "2.5.29"
-val amzVersion = "1.11.602"
+val amzVersion = "2.13.41"
+
+scalacOptions += "-target:jvm-1.8"
 
 libraryDependencies ++= Seq(
-  "com.amazonaws"       % "aws-java-sdk-core"       % amzVersion,
-  "com.amazonaws"       % "aws-java-sdk-dynamodb"   % amzVersion,
+  "software.amazon.awssdk" % "dynamodb"             % amzVersion,
   "com.typesafe.akka"   %% "akka-persistence"       % akkaVersion,
   "com.typesafe.akka"   %% "akka-stream"            % akkaVersion,
   "com.typesafe.akka"   %% "akka-persistence-tck"   % akkaVersion   % "test",

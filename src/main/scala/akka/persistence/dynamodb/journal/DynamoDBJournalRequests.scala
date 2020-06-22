@@ -7,7 +7,6 @@ import java.nio.ByteBuffer
 import java.util.Collections
 
 import akka.persistence.{ AtomicWrite, PersistentRepr }
-import com.amazonaws.services.dynamodbv2.model._
 
 import scala.collection.JavaConverters._
 import scala.concurrent.Future
@@ -19,6 +18,7 @@ import akka.actor.ExtendedActorSystem
 import akka.pattern.after
 import akka.persistence.dynamodb._
 import akka.serialization.{ AsyncSerializer, Serialization, Serializers }
+import software.amazon.awssdk.services.dynamodb.model._
 
 trait DynamoDBJournalRequests extends DynamoDBRequests {
   this: DynamoDBJournal =>
@@ -60,7 +60,7 @@ trait DynamoDBJournalRequests extends DynamoDBRequests {
     if (atomicWrite.size == 1) {
       toMsgItem(atomicWrite.payload.head).flatMap { event =>
         try {
-          if (event.get(Sort).getN == "0") {
+          if (event.get(Sort).n() == "0") {
             val hs = toHSItem(atomicWrite.persistenceId, atomicWrite.lowestSequenceNr)
             liftUnit(dynamo.batchWriteItem(batchWriteReq(putReq(event) :: putReq(hs) :: Nil)))
           } else {
@@ -114,7 +114,7 @@ trait DynamoDBJournalRequests extends DynamoDBRequests {
       batch => s"execute batch delete $batch",
       (start to end).map(deleteReq(persistenceId, _)))
 
-  def setHS(persistenceId: String, to: Long): Future[PutItemResult] = {
+  def setHS(persistenceId: String, to: Long): Future[PutItemResponse] = {
     val put = putItem(toHSItem(persistenceId, to))
     dynamo.putItem(put)
   }
@@ -124,7 +124,7 @@ trait DynamoDBJournalRequests extends DynamoDBRequests {
       _ => s"remove highest sequence number entry for $persistenceId",
       (0 until SequenceShards).map(deleteHSItem(persistenceId, _)))
 
-  def setLS(persistenceId: String, to: Long): Future[PutItemResult] = {
+  def setLS(persistenceId: String, to: Long): Future[PutItemResponse] = {
     val put = putItem(toLSItem(persistenceId, to))
     dynamo.putItem(put)
   }
@@ -185,7 +185,7 @@ trait DynamoDBJournalRequests extends DynamoDBRequests {
         val manifest = Serializers.manifestFor(serializer, reprPayload)
         val manifestLength = if (manifest.isEmpty) 0 else manifest.getBytes.length
 
-        val itemSize = keyLength(repr.persistenceId, repr.sequenceNr) + eventData.getB.remaining + serializerId.getN.getBytes.length + manifestLength + fieldLength
+        val itemSize = keyLength(repr.persistenceId, repr.sequenceNr) + eventData.b().asByteBuffer().remaining + serializerId.n().getBytes.length + manifestLength + fieldLength
 
         if (itemSize > MaxItemSize) {
           throw new DynamoDBJournalRejection(s"MaxItemSize exceeded: $itemSize > $MaxItemSize")
@@ -227,7 +227,7 @@ trait DynamoDBJournalRequests extends DynamoDBRequests {
    * Deleting a highest sequence number entry is done directly by shard number.
    */
   private def deleteHSItem(persistenceId: String, shard: Int): WriteRequest =
-    new WriteRequest().withDeleteRequest(new DeleteRequest().withKey(highSeqKey(persistenceId, shard)))
+    WriteRequest.builder().deleteRequest(DeleteRequest.builder().key(highSeqKey(persistenceId, shard)).build()).build()
 
   /**
    * Store the lowest sequence number for this persistenceId. This is only done
@@ -246,12 +246,12 @@ trait DynamoDBJournalRequests extends DynamoDBRequests {
    * Deleting a lowest sequence number entry is done directly by shard number.
    */
   private def deleteLSItem(persistenceId: String, shard: Int): WriteRequest =
-    new WriteRequest().withDeleteRequest(new DeleteRequest().withKey(lowSeqKey(persistenceId, shard)))
+    WriteRequest.builder().deleteRequest(DeleteRequest.builder().key(lowSeqKey(persistenceId, shard)).build()).build()
 
-  private def putReq(item: Item): WriteRequest = new WriteRequest().withPutRequest(new PutRequest().withItem(item))
+  private def putReq(item: Item): WriteRequest = WriteRequest.builder().putRequest(PutRequest.builder().item(item).build()).build()
 
   private def deleteReq(persistenceId: String, sequenceNr: Long): WriteRequest =
-    new WriteRequest().withDeleteRequest(new DeleteRequest().withKey(messageKey(persistenceId, sequenceNr)))
+    WriteRequest.builder().deleteRequest(DeleteRequest.builder().key(messageKey(persistenceId, sequenceNr)).build()).build()
 
   /*
    * Request execution helpers.
@@ -266,18 +266,18 @@ trait DynamoDBJournalRequests extends DynamoDBRequests {
    * the retries from the client, then we are hosed and cannot continue; that is why we have a RuntimeException here
    */
   private def sendUnprocessedItems(
-    result:           BatchWriteItemResult,
-    retriesRemaining: Int                  = 10,
-    backoff:          FiniteDuration       = 1.millis): Future[BatchWriteItemResult] = {
-    val unprocessed: Int = result.getUnprocessedItems.get(JournalTable) match {
+    result:           BatchWriteItemResponse,
+    retriesRemaining: Int                    = 10,
+    backoff:          FiniteDuration         = 1.millis): Future[BatchWriteItemResponse] = {
+    val unprocessed: Int = result.unprocessedItems().get(JournalTable) match {
       case null  => 0
       case items => items.size
     }
     if (unprocessed == 0) Future.successful(result)
     else if (retriesRemaining == 0) {
-      throw new RuntimeException(s"unable to batch write ${result.getUnprocessedItems.get(JournalTable)} after 10 tries")
+      throw new RuntimeException(s"unable to batch write ${result.unprocessedItems().get(JournalTable)} after 10 tries")
     } else {
-      val rest = batchWriteReq(result.getUnprocessedItems)
+      val rest = batchWriteReq(result.unprocessedItems())
       after(backoff, context.system.scheduler)(dynamo.batchWriteItem(rest).flatMap(r => sendUnprocessedItems(r, retriesRemaining - 1, backoff * 2)))
     }
   }

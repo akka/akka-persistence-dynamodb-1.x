@@ -8,14 +8,15 @@ import java.util.{ Collections, HashMap => JHMap, List => JList, Map => JMap }
 
 import akka.Done
 import akka.actor.{ Actor, ActorLogging }
-import akka.persistence.dynamodb.journal.{ DynamoDBHelper }
-import com.amazonaws.services.dynamodbv2.model._
+import akka.persistence.dynamodb.journal.DynamoDBHelper
+
 import scala.collection.JavaConverters._
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 import scala.util.control.NonFatal
 import scala.concurrent.duration._
 import akka.pattern.after
+import software.amazon.awssdk.services.dynamodb.model._
 
 private[dynamodb] trait DynamoDBRequests {
   this: ActorLogging with Actor =>
@@ -26,15 +27,16 @@ private[dynamodb] trait DynamoDBRequests {
   import context.dispatcher
   import settings._
 
-  def putItem(item: Item): PutItemRequest = new PutItemRequest().withTableName(Table).withItem(item)
+  def putItem(item: Item): PutItemRequest = PutItemRequest.builder().tableName(Table).item(item).build()
 
   def batchWriteReq(writes: Seq[WriteRequest]): BatchWriteItemRequest =
     batchWriteReq(Collections.singletonMap(Table, writes.asJava))
 
   def batchWriteReq(items: JMap[String, JList[WriteRequest]]): BatchWriteItemRequest =
-    new BatchWriteItemRequest()
-      .withRequestItems(items)
-      .withReturnConsumedCapacity(ReturnConsumedCapacity.TOTAL)
+    BatchWriteItemRequest.builder()
+      .requestItems(items)
+      .returnConsumedCapacity(ReturnConsumedCapacity.TOTAL)
+      .build()
 
   /*
    * Request execution helpers.
@@ -66,18 +68,18 @@ private[dynamodb] trait DynamoDBRequests {
    * the retries from the client, then we are hosed and cannot continue; that is why we have a RuntimeException here
    */
   private def sendUnprocessedItems(
-    result:           BatchWriteItemResult,
-    retriesRemaining: Int                  = 10,
-    backoff:          FiniteDuration       = 1.millis): Future[BatchWriteItemResult] = {
-    val unprocessed: Int = result.getUnprocessedItems.get(Table) match {
+    result:           BatchWriteItemResponse,
+    retriesRemaining: Int                    = 10,
+    backoff:          FiniteDuration         = 1.millis): Future[BatchWriteItemResponse] = {
+    val unprocessed: Int = result.unprocessedItems.get(Table) match {
       case null  => 0
       case items => items.size
     }
     if (unprocessed == 0) Future.successful(result)
     else if (retriesRemaining == 0) {
-      throw new RuntimeException(s"unable to batch write ${result.getUnprocessedItems.get(Table)} after 10 tries")
+      throw new RuntimeException(s"unable to batch write ${result.unprocessedItems.get(Table)} after 10 tries")
     } else {
-      val rest = batchWriteReq(result.getUnprocessedItems)
+      val rest = batchWriteReq(result.unprocessedItems)
       after(backoff, context.system.scheduler)(dynamo.batchWriteItem(rest).flatMap(r => sendUnprocessedItems(r, retriesRemaining - 1, backoff * 2)))
     }
   }

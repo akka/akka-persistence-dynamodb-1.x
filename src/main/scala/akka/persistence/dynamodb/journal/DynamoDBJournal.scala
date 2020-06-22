@@ -15,10 +15,6 @@ import akka.persistence.{ AtomicWrite, Persistence, PersistentRepr }
 import akka.serialization.{ AsyncSerializer, SerializationExtension }
 import akka.stream.ActorMaterializer
 import akka.util.ByteString
-import com.amazonaws.AmazonServiceException
-import com.amazonaws.auth.BasicAWSCredentials
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient
-import com.amazonaws.services.dynamodbv2.model._
 import com.typesafe.config.Config
 
 import scala.collection.immutable
@@ -29,6 +25,7 @@ import akka.actor.ActorRef
 
 import scala.concurrent.Promise
 import akka.persistence.dynamodb._
+import software.amazon.awssdk.services.dynamodb.model.DescribeTableRequest
 
 class DynamoDBJournalFailure(message: String, cause: Throwable = null) extends RuntimeException(message, cause)
 class DynamoDBJournalRejection(message: String, cause: Throwable = null) extends RuntimeException(message, cause)
@@ -86,7 +83,7 @@ class DynamoDBJournal(config: Config) extends AsyncWriteJournal with DynamoDBRec
 
   val dynamo = dynamoClient(context.system, settings)
 
-  dynamo.describeTable(new DescribeTableRequest().withTableName(JournalTable)).onComplete {
+  dynamo.describeTable(DescribeTableRequest.builder().tableName(JournalTable).build()).onComplete {
     case Success(result) => log.info("using DynamoDB table {}", result)
     case _               => log.error("persistent actor requests will fail until the table '{}' is accessible", JournalTable)
   }
@@ -138,7 +135,7 @@ class DynamoDBJournal(config: Config) extends AsyncWriteJournal with DynamoDBRec
       for {
         lowest <- lowF
         highest <- highF
-        val upTo = Math.min(toSequenceNr, highest)
+        upTo = Math.min(toSequenceNr, highest)
         _ <- if (upTo + 1 > lowest) setLS(persistenceId, to = upTo + 1) else Future.successful(Done)
         _ <- if (lowest <= upTo) deleteMessages(persistenceId, lowest, upTo) else Future.successful(Done)
       } yield {
