@@ -5,7 +5,7 @@ crossScalaVersions := Seq("2.11.12", "2.12.8", "2.13.1")
 crossVersion       := CrossVersion.binary
 
 val akkaVersion = "2.5.29"
-val amzVersion = "1.11.602"
+val amzVersion = "2.13.41"
 
 scalacOptions += "-target:jvm-1.8"
 

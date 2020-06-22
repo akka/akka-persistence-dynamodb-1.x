@@ -55,7 +55,7 @@ class FailureReportingSpec extends TestKit(ActorSystem("FailureReportingSpec"))
   override def beforeAll(): Unit = ensureJournalTableExists()
 
   override def afterAll(): Unit = {
-    client.shutdown()
+    // client.shutdown()
     system.terminate().futureValue
   }
 
@@ -100,7 +100,7 @@ class FailureReportingSpec extends TestKit(ActorSystem("FailureReportingSpec"))
         .withFallback(ConfigFactory.load())
       implicit val system = ActorSystem("FailureReportingSpec-test3", config)
       try
-        EventFilter.info(pattern     = ".*protocol:https.*", occurrences = 1).intercept {
+        EventFilter.info(pattern     = ".*JournalTable:test-journal.*", occurrences = 1).intercept {
           Persistence(system).journalFor("")
         }
       finally system.terminate()
@@ -138,7 +138,7 @@ akka.loggers = ["akka.testkit.TestEventListener"]
       implicit val system = ActorSystem("FailureReportingSpec-test5", config)
       try {
         val journal =
-          EventFilter[ResourceNotFoundException](pattern     = ".*ThisTableDoesNotExist.*", occurrences = 1).intercept {
+          EventFilter[ResourceNotFoundException](pattern     = ".*Cannot do operations on a non-existent table.*", occurrences = 1).intercept {
             EventFilter.error(pattern     = ".*requests will fail.*ThisTableDoesNotExist.*", occurrences = 1).intercept {
               Persistence(system).journalFor("")
             }
@@ -250,7 +250,6 @@ akka.loggers = ["akka.testkit.TestEventListener"]
         desc(aws) should include("43")
       }
     }
-
   }
 
 }

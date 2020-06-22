@@ -88,8 +88,7 @@ class DynamoDBJournal(config: Config) extends AsyncWriteJournal with DynamoDBRec
     case _               => log.error("persistent actor requests will fail until the table '{}' is accessible", JournalTable)
   }
 
-  override def postStop(): Unit = ()
-  // dynamo.shutdown()
+  override def postStop(): Unit = dynamo.shutdown()
 
   private case class OpFinished(pid: String, f: Future[Done])
   private val opQueue: JMap[String, Future[Done]] = new JHMap
@@ -136,7 +135,7 @@ class DynamoDBJournal(config: Config) extends AsyncWriteJournal with DynamoDBRec
       for {
         lowest <- lowF
         highest <- highF
-        val upTo = Math.min(toSequenceNr, highest)
+        upTo = Math.min(toSequenceNr, highest)
         _ <- if (upTo + 1 > lowest) setLS(persistenceId, to = upTo + 1) else Future.successful(Done)
         _ <- if (lowest <= upTo) deleteMessages(persistenceId, lowest, upTo) else Future.successful(Done)
       } yield {

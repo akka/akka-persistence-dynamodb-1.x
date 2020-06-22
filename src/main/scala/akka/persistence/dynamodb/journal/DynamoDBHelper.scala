@@ -49,12 +49,16 @@ trait DynamoDBHelper {
               } else {
                 // Handle the error
                 ex match {
-                  case e: ProvisionedThroughputExceededException =>
-                    p.tryFailure(e)
-                  case _ =>
-                    val n = name
-                    log.error(ex, "failure while executing {}", n)
-                    p.tryFailure(new DynamoDBJournalFailure("failure while executing " + n, ex))
+                  case c: java.util.concurrent.CompletionException =>
+                    val cause = c.getCause
+                    cause match {
+                      case e: ProvisionedThroughputExceededException =>
+                        p.tryFailure(e)
+                      case _ =>
+                        val n = name
+                        log.error(cause, "failure while executing {}", n)
+                        p.tryFailure(new DynamoDBJournalFailure("failure while executing " + n, cause))
+                    }
                 }
               }
             }
