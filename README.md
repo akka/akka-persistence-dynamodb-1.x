@@ -24,14 +24,14 @@ This plugin is published to the Maven Central repository with the following name
 <dependency>
     <groupId>com.typesafe.akka</groupId>
     <artifactId>akka-persistence-dynamodb_2.11</artifactId>
-    <version>1.2.0</version>
+    <version>1.2.0-RC2</version>
 </dependency>
 ~~~
 
 or for sbt users:
 
 ```sbt
-libraryDependencies += "com.typesafe.akka" %% "akka-persistence-dynamodb" % "1.2.0"
+libraryDependencies += "com.typesafe.akka" %% "akka-persistence-dynamodb" % "1.2.0-RC2"
 ```
 
 Configuration
