@@ -1,7 +1,7 @@
 name := "akka-persistence-dynamodb"
 
-scalaVersion       := "2.11.12"
-crossScalaVersions := Seq("2.11.12", "2.12.8", "2.13.0")
+scalaVersion       := "2.12.11"
+crossScalaVersions := Seq("2.11.12", "2.12.11", "2.13.3")
 crossVersion       := CrossVersion.binary
 
 val akkaVersion = "2.5.29"
