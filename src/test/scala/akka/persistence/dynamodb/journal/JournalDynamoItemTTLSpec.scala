@@ -44,7 +44,7 @@ class JournalDynamoItemTTLSpec extends PluginSpec(JournalDynamoItemTTLSpec.confi
 
       val expectedTTL = OffsetDateTime.now.plusDays(300).toEpochSecond
 
-      response.getItem.get(ttlFieldName).getN.toLong === expectedTTL +- 1
+      assert(response.getItem.get(ttlFieldName).getN.toLong === expectedTTL +- 1)
 
     }
   }
