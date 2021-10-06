@@ -3,9 +3,8 @@
  */
 package akka.persistence.dynamodb.journal
 
+import akka.persistence.dynamodb.{ DynamoDBClientConfig, DynamoDBConfig, DynamoDBTTLConfig, DynamoDBTTLConfigReader }
 import com.typesafe.config.Config
-
-import akka.persistence.dynamodb.{ DynamoDBClientConfig, DynamoDBConfig }
 
 class DynamoDBJournalConfig(c: Config) extends DynamoDBConfig {
   val JournalTable = c getString "journal-table"
@@ -25,6 +24,8 @@ class DynamoDBJournalConfig(c: Config) extends DynamoDBConfig {
   val MaxBatchWrite = c getInt "aws-api-limits.max-batch-write"
   val MaxItemSize = c getInt "aws-api-limits.max-item-size"
 
+  override val maybeTTLConfig: Option[DynamoDBTTLConfig] = DynamoDBTTLConfigReader.readTTLConfig(c)
+
   val client = new DynamoDBClientConfig(c)
   override def toString: String = "DynamoDBJournalConfig(" +
     "JournalTable:" + JournalTable +
@@ -38,7 +39,8 @@ class DynamoDBJournalConfig(c: Config) extends DynamoDBConfig {
     ",Tracing:" + Tracing +
     ",MaxBatchGet:" + MaxBatchGet +
     ",MaxBatchWrite:" + MaxBatchWrite +
-    ",MaxItemSize:" + MaxItemSize +
+    ",MaxItemSize:" + MaxItemSize ++
+    ",TTLConfig:" + maybeTTLConfig.getOrElse("<undefined>") +
     ",client.config:" + client +
     ")"
 }
