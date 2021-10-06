@@ -3,25 +3,26 @@
  */
 package akka.persistence.dynamodb.journal
 
-import java.nio.ByteBuffer
-import java.util.Collections
-
-import akka.persistence.{ AtomicWrite, PersistentRepr }
-import com.amazonaws.services.dynamodbv2.model._
-
-import scala.collection.JavaConverters._
-import scala.concurrent.Future
-import scala.concurrent.duration._
-import scala.util.{ Failure, Success, Try }
-import scala.util.control.NonFatal
 import akka.Done
 import akka.actor.ExtendedActorSystem
 import akka.pattern.after
 import akka.persistence.dynamodb._
+import akka.persistence.{ AtomicWrite, PersistentRepr }
 import akka.serialization.{ AsyncSerializer, Serialization, Serializers }
+import com.amazonaws.services.dynamodbv2.model._
+
+import java.nio.ByteBuffer
+import java.time.OffsetDateTime
+import java.util.Collections
+import scala.collection.JavaConverters._
+import scala.concurrent.Future
+import scala.concurrent.duration._
+import scala.util.control.NonFatal
+import scala.util.{ Failure, Success, Try }
 
 trait DynamoDBJournalRequests extends DynamoDBRequests {
   this: DynamoDBJournal =>
+
   import settings._
 
   /**
@@ -42,6 +43,7 @@ trait DynamoDBJournalRequests extends DynamoDBRequests {
           case write :: remainder => writeMessages(write).flatMap(result => rec(remainder, bubbleUpFailures(result) :: acc))
           case Nil                => Future.successful(acc.reverse)
         }
+
       rec(writes.toList, Nil)
     }
 
@@ -197,6 +199,12 @@ trait DynamoDBJournalRequests extends DynamoDBRequests {
         item.put(Event, eventData)
         item.put(WriterUuid, S(repr.writerUuid))
         item.put(SerializerId, serializerId)
+
+        maybeTTLConfig.foreach { ttlConfig =>
+          val expiresAt = ttlConfig.ttl.getItemExpiryTimeSeconds(OffsetDateTime.now)
+          item.put(ttlConfig.fieldName, N(expiresAt))
+        }
+
         if (repr.manifest.nonEmpty) {
           item.put(Manifest, S(repr.manifest))
         }
