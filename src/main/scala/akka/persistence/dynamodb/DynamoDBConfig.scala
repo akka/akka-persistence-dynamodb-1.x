@@ -7,28 +7,9 @@ import com.amazonaws.{ ClientConfiguration, Protocol }
 import com.typesafe.config.Config
 
 import java.net.InetAddress
-import java.time.OffsetDateTime
-import scala.concurrent.duration.{ Duration, DurationLong }
-import scala.util.Try
 
 trait ClientConfig {
   val config: ClientConfiguration
-}
-
-case class DynamoDBTTL(ttl: Duration) {
-  def getItemExpiryTimeSeconds(now: OffsetDateTime): Long =
-    now.plusNanos(ttl.toNanos).toEpochSecond
-}
-
-object DynamoDBTTL {
-  def fromJavaDuration(duration: java.time.Duration): DynamoDBTTL =
-    DynamoDBTTL(duration.toNanos.nanos)
-}
-
-case class DynamoDBTTLConfig(fieldName: String, ttl: DynamoDBTTL) {
-
-  override def toString: String =
-    s"DynamoDBTTLConfig(fieldName = ${fieldName}, ttl = ${ttl.ttl})"
 }
 
 trait DynamoDBConfig {
@@ -44,23 +25,6 @@ trait DynamoDBConfig {
   val Table: String
   val JournalName: String
   val maybeTTLConfig: Option[DynamoDBTTLConfig]
-}
-
-object DynamoDBTTLConfigReader {
-
-  val configFieldName: String = "dynamodb-item-ttl-config.field-name"
-  val configTtlName: String = "dynamodb-item-ttl-config.ttl"
-
-  def readTTLConfig(c: Config): Option[DynamoDBTTLConfig] = {
-    for {
-      fieldName <- Try(c getString configFieldName).toOption
-      if fieldName.nonEmpty
-      ttl <- Try(c getDuration configTtlName).toOption
-    } yield DynamoDBTTLConfig(
-      fieldName = fieldName,
-      ttl       = DynamoDBTTL.fromJavaDuration(ttl))
-  }
-
 }
 
 class DynamoDBClientConfig(c: Config) extends ClientConfig {

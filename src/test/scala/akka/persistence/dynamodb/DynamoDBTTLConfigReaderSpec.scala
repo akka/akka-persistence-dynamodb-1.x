@@ -32,6 +32,17 @@ class DynamoDBTTLConfigReaderSpec extends WordSpec with Matchers {
         .readTTLConfig(config) should be(empty)
     }
 
+    "return empty if the field name is defined but blank" in {
+      val config = ConfigFactory.parseString(
+        """dynamodb-item-ttl-config {
+          |  field-name = " "
+          |  ttl = 5d
+          |}""".stripMargin)
+
+      DynamoDBTTLConfigReader
+        .readTTLConfig(config) should be(empty)
+    }
+
     "return empty configuration if ttl is not defined" in {
       val config = ConfigFactory.parseString(
         """dynamodb-item-ttl-config {
