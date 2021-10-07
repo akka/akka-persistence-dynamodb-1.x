@@ -8,7 +8,7 @@ import akka.actor.ExtendedActorSystem
 import akka.pattern.after
 import akka.persistence.dynamodb._
 import akka.persistence.{ AtomicWrite, PersistentRepr }
-import akka.serialization.{ AsyncSerializer, Serialization, Serializers }
+import akka.serialization.{ AsyncSerializer, Serialization, Serializer, Serializers }
 import com.amazonaws.services.dynamodbv2.model._
 
 import java.nio.ByteBuffer
@@ -165,18 +165,8 @@ trait DynamoDBJournalRequests extends DynamoDBRequests {
     try {
       val reprPayload: AnyRef = repr.payload.asInstanceOf[AnyRef]
       val serializer = serialization.serializerFor(reprPayload.getClass)
-      val fut = serializer match {
-        case aS: AsyncSerializer =>
-          Serialization.withTransportInformation(context.system.asInstanceOf[ExtendedActorSystem]) { () =>
-            aS.toBinaryAsync(reprPayload)
-          }
-        case _ =>
-          Future {
-            ByteBuffer.wrap(serialization.serialize(reprPayload).get).array()
-          }
-      }
 
-      fut.map { serialized =>
+      serializePersistentRepr(reprPayload, serializer).map { serialized =>
 
         val eventData = B(serialized)
         val serializerId = N(serializer.identifier)
@@ -216,6 +206,19 @@ trait DynamoDBJournalRequests extends DynamoDBRequests {
       }
     } catch {
       case NonFatal(e) => Future.failed(e)
+    }
+  }
+
+  private def serializePersistentRepr(reprPayload: AnyRef, serializer: Serializer) = {
+    serializer match {
+      case aS: AsyncSerializer =>
+        Serialization.withTransportInformation(context.system.asInstanceOf[ExtendedActorSystem]) { () =>
+          aS.toBinaryAsync(reprPayload)
+        }
+      case _ =>
+        Future {
+          ByteBuffer.wrap(serialization.serialize(reprPayload).get).array()
+        }
     }
   }
 
