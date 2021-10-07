@@ -24,7 +24,7 @@ class DynamoDBJournalConfig(c: Config) extends DynamoDBConfig {
   val MaxBatchWrite = c getInt "aws-api-limits.max-batch-write"
   val MaxItemSize = c getInt "aws-api-limits.max-item-size"
 
-  override val maybeTTLConfig: Option[DynamoDBTTLConfig] = DynamoDBTTLConfigReader.readTTLConfig(c)
+  override val TTLConfig: Option[DynamoDBTTLConfig] = DynamoDBTTLConfigReader.readTTLConfig(c)
 
   val client = new DynamoDBClientConfig(c)
   override def toString: String = "DynamoDBJournalConfig(" +
@@ -40,7 +40,7 @@ class DynamoDBJournalConfig(c: Config) extends DynamoDBConfig {
     ",MaxBatchGet:" + MaxBatchGet +
     ",MaxBatchWrite:" + MaxBatchWrite +
     ",MaxItemSize:" + MaxItemSize ++
-    ",TTLConfig:" + maybeTTLConfig.getOrElse("<undefined>") +
+    ",TTLConfig:" + TTLConfig.getOrElse("<undefined>") +
     ",client.config:" + client +
     ")"
 }

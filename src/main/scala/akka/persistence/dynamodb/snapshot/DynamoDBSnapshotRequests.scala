@@ -155,9 +155,10 @@ trait DynamoDBSnapshotRequests extends DynamoDBRequests {
     fut.map { data =>
       item.put(PayloadData, B(data))
 
-      maybeTTLConfig.foreach { ttlConfig =>
-        val expiresAt = ttlConfig.ttl.getItemExpiryTimeSeconds(OffsetDateTime.now)
-        item.put(ttlConfig.fieldName, N(expiresAt))
+      TTLConfig.foreach {
+        case DynamoDBTTLConfig(fieldName, ttl) =>
+          val expiresAt = ttl.getItemExpiryTimeSeconds(OffsetDateTime.now)
+          item.put(fieldName, N(expiresAt))
       }
 
       if (manifest.nonEmpty) {

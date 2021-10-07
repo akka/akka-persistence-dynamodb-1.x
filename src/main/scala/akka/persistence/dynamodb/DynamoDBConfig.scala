@@ -24,7 +24,7 @@ trait DynamoDBConfig {
   val MaxItemSize: Int
   val Table: String
   val JournalName: String
-  val maybeTTLConfig: Option[DynamoDBTTLConfig]
+  val TTLConfig: Option[DynamoDBTTLConfig]
 }
 
 class DynamoDBClientConfig(c: Config) extends ClientConfig {

@@ -200,9 +200,10 @@ trait DynamoDBJournalRequests extends DynamoDBRequests {
         item.put(WriterUuid, S(repr.writerUuid))
         item.put(SerializerId, serializerId)
 
-        maybeTTLConfig.foreach { ttlConfig =>
-          val expiresAt = ttlConfig.ttl.getItemExpiryTimeSeconds(OffsetDateTime.now)
-          item.put(ttlConfig.fieldName, N(expiresAt))
+        TTLConfig.foreach {
+          case DynamoDBTTLConfig(fieldName, ttl) =>
+            val expiresAt = ttl.getItemExpiryTimeSeconds(OffsetDateTime.now)
+            item.put(fieldName, N(expiresAt))
         }
 
         if (repr.manifest.nonEmpty) {

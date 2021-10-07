@@ -18,13 +18,13 @@ class DynamoDBSnapshotConfig(c: Config) extends DynamoDBConfig {
   val MaxBatchWrite = c getInt "aws-api-limits.max-batch-write"
   val MaxItemSize = c getInt "aws-api-limits.max-item-size"
 
-  override val maybeTTLConfig: Option[DynamoDBTTLConfig] = DynamoDBTTLConfigReader.readTTLConfig(c)
+  override val TTLConfig: Option[DynamoDBTTLConfig] = DynamoDBTTLConfigReader.readTTLConfig(c)
 
   override def toString: String = "DynamoDBJournalConfig(" +
     "SnapshotTable:" + Table +
     ",AwsKey:" + AwsKey +
     ",Endpoint:" + Endpoint +
-    ",TTLConfig:" + maybeTTLConfig.getOrElse("<undefined>") + ")"
+    ",TTLConfig:" + TTLConfig.getOrElse("<undefined>") + ")"
 
   override val client: ClientConfig = new DynamoDBClientConfig(c)
 
