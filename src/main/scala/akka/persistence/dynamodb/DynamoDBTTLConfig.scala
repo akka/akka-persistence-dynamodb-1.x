@@ -13,7 +13,10 @@ case class DynamoDBTTLConfig(fieldName: String, ttl: DynamoDBTTL) {
 }
 
 case class DynamoDBTTL(ttl: Duration) {
-  def getItemExpiryTimeSeconds(now: OffsetDateTime): Long =
+
+  // Important, the value needs to be Unix epoch time format in seconds
+  // See https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/time-to-live-ttl-before-you-start.html#time-to-live-ttl-before-you-start-formatting
+  def getItemExpiryTimeEpochSeconds(now: OffsetDateTime): Long =
     now.plusNanos(ttl.toNanos).toEpochSecond
 }
 

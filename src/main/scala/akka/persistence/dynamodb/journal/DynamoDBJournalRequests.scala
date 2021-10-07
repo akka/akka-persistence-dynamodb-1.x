@@ -202,7 +202,7 @@ trait DynamoDBJournalRequests extends DynamoDBRequests {
 
         TTLConfig.foreach {
           case DynamoDBTTLConfig(fieldName, ttl) =>
-            val expiresAt = ttl.getItemExpiryTimeSeconds(OffsetDateTime.now)
+            val expiresAt = ttl.getItemExpiryTimeEpochSeconds(OffsetDateTime.now)
             item.put(fieldName, N(expiresAt))
         }
 

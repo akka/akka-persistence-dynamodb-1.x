@@ -11,12 +11,12 @@ class DynamoDBTTLSpec extends WordSpec with Matchers {
 
     "return the right number of seconds for if the ttl is 0" in {
       val now = OffsetDateTime.now()
-      DynamoDBTTL(0.minutes).getItemExpiryTimeSeconds(now) should be(now.toEpochSecond)
+      DynamoDBTTL(0.minutes).getItemExpiryTimeEpochSeconds(now) should be(now.toEpochSecond)
     }
 
     "return the right number of seconds for if the ttl is 5d" in {
       val now = OffsetDateTime.now()
-      DynamoDBTTL(5.days).getItemExpiryTimeSeconds(now) should be(now.plusDays(5).toEpochSecond)
+      DynamoDBTTL(5.days).getItemExpiryTimeEpochSeconds(now) should be(now.plusDays(5).toEpochSecond)
     }
 
   }
