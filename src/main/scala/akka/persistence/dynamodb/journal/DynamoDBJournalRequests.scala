@@ -171,10 +171,10 @@ trait DynamoDBJournalRequests extends DynamoDBRequests {
         val eventData = B(serialized)
         val serializerId = N(serializer.identifier)
 
+        val manifest = Serializers.manifestFor(serializer, reprPayload)
+
         val fieldLength = repr.persistenceId.getBytes.length + repr.sequenceNr.toString.getBytes.length +
           repr.writerUuid.getBytes.length + repr.manifest.getBytes.length
-
-        val manifest = Serializers.manifestFor(serializer, reprPayload)
         val manifestLength = if (manifest.isEmpty) 0 else manifest.getBytes.length
 
         val itemSize = keyLength(repr.persistenceId, repr.sequenceNr) + eventData.getB.remaining + serializerId.getN.getBytes.length + manifestLength + fieldLength
