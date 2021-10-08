@@ -25,6 +25,8 @@ trait DynamoDBJournalRequests extends DynamoDBRequests {
 
   import settings._
 
+  private lazy val itemSizeVerifier = new ItemSizeVerifier(settings)
+
   /**
    * Write all messages in a sequence of AtomicWrites. Care must be taken to
    * not have concurrent writes happening that touch the highest sequence number.
@@ -173,7 +175,7 @@ trait DynamoDBJournalRequests extends DynamoDBRequests {
 
         val manifest = Serializers.manifestFor(serializer, reprPayload)
 
-        verifyItemSizeDidNotReachThreshold(repr, eventData, serializerId, manifest)
+        itemSizeVerifier.verifyItemSizeDidNotReachThreshold(repr, eventData, serializerId, manifest)
 
         createItem(repr, eventData, serializerId, manifest)
       }
@@ -204,31 +206,6 @@ trait DynamoDBJournalRequests extends DynamoDBRequests {
       item.put(SerializerManifest, S(manifest))
     }
     item
-  }
-
-  private def verifyItemSizeDidNotReachThreshold(repr: PersistentRepr, eventData: AttributeValue, serializerId: AttributeValue, manifest: String): Unit = {
-
-    def keyLength(persistenceId: String): Int =
-      persistenceId.length + JournalName.length + KeyPayloadOverhead
-
-    val fieldLength =
-      repr.persistenceId.getBytes.length +
-        repr.sequenceNr.toString.getBytes.length +
-        repr.writerUuid.getBytes.length +
-        repr.manifest.getBytes.length
-
-    val manifestLength = if (manifest.isEmpty) 0 else manifest.getBytes.length
-
-    val itemSize =
-      keyLength(repr.persistenceId) +
-        eventData.getB.remaining +
-        serializerId.getN.getBytes.length +
-        manifestLength +
-        fieldLength
-
-    if (itemSize > MaxItemSize) {
-      throw new DynamoDBJournalRejection(s"MaxItemSize exceeded: $itemSize > $MaxItemSize")
-    }
   }
 
   private def serializePersistentRepr(reprPayload: AnyRef, serializer: Serializer) = {
