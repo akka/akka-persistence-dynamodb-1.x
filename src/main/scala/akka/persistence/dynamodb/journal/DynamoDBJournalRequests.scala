@@ -173,15 +173,8 @@ trait DynamoDBJournalRequests extends DynamoDBRequests {
 
         val manifest = Serializers.manifestFor(serializer, reprPayload)
 
-        val fieldLength = repr.persistenceId.getBytes.length + repr.sequenceNr.toString.getBytes.length +
-          repr.writerUuid.getBytes.length + repr.manifest.getBytes.length
-        val manifestLength = if (manifest.isEmpty) 0 else manifest.getBytes.length
+        verifyItemSizeDidNotReachThreshold(repr, eventData, serializerId, manifest)
 
-        val itemSize = keyLength(repr.persistenceId, repr.sequenceNr) + eventData.getB.remaining + serializerId.getN.getBytes.length + manifestLength + fieldLength
-
-        if (itemSize > MaxItemSize) {
-          throw new DynamoDBJournalRejection(s"MaxItemSize exceeded: $itemSize > $MaxItemSize")
-        }
         val item: Item = messageKey(repr.persistenceId, repr.sequenceNr)
 
         item.put(PersistentId, S(repr.persistenceId))
@@ -206,6 +199,27 @@ trait DynamoDBJournalRequests extends DynamoDBRequests {
       }
     } catch {
       case NonFatal(e) => Future.failed(e)
+    }
+  }
+
+  private def verifyItemSizeDidNotReachThreshold(repr: PersistentRepr, eventData: AttributeValue, serializerId: AttributeValue, manifest: String): Unit = {
+    val fieldLength =
+      repr.persistenceId.getBytes.length +
+        repr.sequenceNr.toString.getBytes.length +
+        repr.writerUuid.getBytes.length +
+        repr.manifest.getBytes.length
+
+    val manifestLength = if (manifest.isEmpty) 0 else manifest.getBytes.length
+
+    val itemSize =
+      keyLength(repr.persistenceId, repr.sequenceNr) +
+        eventData.getB.remaining +
+        serializerId.getN.getBytes.length +
+        manifestLength +
+        fieldLength
+
+    if (itemSize > MaxItemSize) {
+      throw new DynamoDBJournalRejection(s"MaxItemSize exceeded: $itemSize > $MaxItemSize")
     }
   }
 
