@@ -175,31 +175,35 @@ trait DynamoDBJournalRequests extends DynamoDBRequests {
 
         verifyItemSizeDidNotReachThreshold(repr, eventData, serializerId, manifest)
 
-        val item: Item = messageKey(repr.persistenceId, repr.sequenceNr)
-
-        item.put(PersistentId, S(repr.persistenceId))
-        item.put(SequenceNr, N(repr.sequenceNr))
-        item.put(Event, eventData)
-        item.put(WriterUuid, S(repr.writerUuid))
-        item.put(SerializerId, serializerId)
-
-        TTLConfig.foreach {
-          case DynamoDBTTLConfig(fieldName, ttl) =>
-            val expiresAt = ttl.getItemExpiryTimeEpochSeconds(OffsetDateTime.now)
-            item.put(fieldName, N(expiresAt))
-        }
-
-        if (repr.manifest.nonEmpty) {
-          item.put(Manifest, S(repr.manifest))
-        }
-        if (manifest.nonEmpty) {
-          item.put(SerializerManifest, S(manifest))
-        }
-        item
+        createItem(repr, eventData, serializerId, manifest)
       }
     } catch {
       case NonFatal(e) => Future.failed(e)
     }
+  }
+
+  private def createItem(repr: PersistentRepr, eventData: AttributeValue, serializerId: AttributeValue, manifest: String) = {
+    val item: Item = messageKey(repr.persistenceId, repr.sequenceNr)
+
+    item.put(PersistentId, S(repr.persistenceId))
+    item.put(SequenceNr, N(repr.sequenceNr))
+    item.put(Event, eventData)
+    item.put(WriterUuid, S(repr.writerUuid))
+    item.put(SerializerId, serializerId)
+
+    TTLConfig.foreach {
+      case DynamoDBTTLConfig(fieldName, ttl) =>
+        val expiresAt = ttl.getItemExpiryTimeEpochSeconds(OffsetDateTime.now)
+        item.put(fieldName, N(expiresAt))
+    }
+
+    if (repr.manifest.nonEmpty) {
+      item.put(Manifest, S(repr.manifest))
+    }
+    if (manifest.nonEmpty) {
+      item.put(SerializerManifest, S(manifest))
+    }
+    item
   }
 
   private def verifyItemSizeDidNotReachThreshold(repr: PersistentRepr, eventData: AttributeValue, serializerId: AttributeValue, manifest: String): Unit = {
