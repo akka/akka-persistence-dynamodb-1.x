@@ -9,9 +9,6 @@ class ItemSizeVerifier(dynamoDBConfig: DynamoDBConfig) {
 
   def verifyItemSizeDidNotReachThreshold(repr: PersistentRepr, eventData: AttributeValue, serializerId: AttributeValue, manifest: String): Unit = {
 
-    def keyLength(persistenceId: String): Int =
-      persistenceId.length + JournalName.length + KeyPayloadOverhead
-
     val fieldLength =
       repr.persistenceId.getBytes.length +
         repr.sequenceNr.toString.getBytes.length +
@@ -20,8 +17,13 @@ class ItemSizeVerifier(dynamoDBConfig: DynamoDBConfig) {
 
     val manifestLength = if (manifest.isEmpty) 0 else manifest.getBytes.length
 
+    val keyLength =
+      repr.persistenceId.length +
+        JournalName.length +
+        KeyPayloadOverhead
+
     val itemSize =
-      keyLength(repr.persistenceId) +
+      keyLength +
         eventData.getB.remaining +
         serializerId.getN.getBytes.length +
         manifestLength +
