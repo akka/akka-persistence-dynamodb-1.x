@@ -207,6 +207,10 @@ trait DynamoDBJournalRequests extends DynamoDBRequests {
   }
 
   private def verifyItemSizeDidNotReachThreshold(repr: PersistentRepr, eventData: AttributeValue, serializerId: AttributeValue, manifest: String): Unit = {
+
+    def keyLength(persistenceId: String): Int =
+      persistenceId.length + JournalName.length + KeyPayloadOverhead
+
     val fieldLength =
       repr.persistenceId.getBytes.length +
         repr.sequenceNr.toString.getBytes.length +
@@ -216,7 +220,7 @@ trait DynamoDBJournalRequests extends DynamoDBRequests {
     val manifestLength = if (manifest.isEmpty) 0 else manifest.getBytes.length
 
     val itemSize =
-      keyLength(repr.persistenceId, repr.sequenceNr) +
+      keyLength(repr.persistenceId) +
         eventData.getB.remaining +
         serializerId.getN.getBytes.length +
         manifestLength +
