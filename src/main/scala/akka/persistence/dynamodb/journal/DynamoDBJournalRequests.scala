@@ -25,7 +25,7 @@ trait DynamoDBJournalRequests extends DynamoDBRequests {
 
   import settings._
 
-  private lazy val itemSizeVerifier = new ItemSizeVerifier(settings)
+  private lazy val itemSizeVerifier = new ItemSizeCalculator(settings)
 
   /**
    * Write all messages in a sequence of AtomicWrites. Care must be taken to
@@ -175,7 +175,10 @@ trait DynamoDBJournalRequests extends DynamoDBRequests {
 
         val manifest = Serializers.manifestFor(serializer, reprPayload)
 
-        itemSizeVerifier.verifyItemSizeDidNotReachThreshold(repr, eventData, serializerId, manifest)
+        val itemSize = itemSizeVerifier.getItemSize(repr, eventData, serializerId, manifest)
+        if (itemSize > MaxItemSize) {
+          throw new DynamoDBJournalRejection(s"MaxItemSize exceeded: $itemSize > $MaxItemSize")
+        }
 
         createItem(repr, eventData, serializerId, manifest)
       }

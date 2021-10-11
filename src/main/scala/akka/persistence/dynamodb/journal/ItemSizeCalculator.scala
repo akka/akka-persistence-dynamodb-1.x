@@ -6,12 +6,12 @@ import com.amazonaws.services.dynamodbv2.model.AttributeValue
 
 import java.time.OffsetDateTime
 
-class ItemSizeVerifier(dynamoDBConfig: DynamoDBConfig) {
+class ItemSizeCalculator(dynamoDBConfig: DynamoDBConfig) {
   import dynamoDBConfig._
 
   private val ttlInEpochSecondsLength = OffsetDateTime.now().toEpochSecond.toString.length
 
-  def verifyItemSizeDidNotReachThreshold(repr: PersistentRepr, eventData: AttributeValue, serializerId: AttributeValue, manifest: String): Long = {
+  def getItemSize(repr: PersistentRepr, eventData: AttributeValue, serializerId: AttributeValue, manifest: String): Long = {
 
     val fieldLength =
       repr.persistenceId.getBytes.length +
@@ -30,18 +30,12 @@ class ItemSizeVerifier(dynamoDBConfig: DynamoDBConfig) {
       case DynamoDBTTLConfig(fieldName, _) => fieldName.length + ttlInEpochSecondsLength
     }.getOrElse(0)
 
-    val itemSize =
-      keyLength +
-        eventData.getB.remaining +
-        serializerId.getN.getBytes.length +
-        manifestLength +
-        fieldLength +
-        ttlSize
-
-    if (itemSize > MaxItemSize) {
-      throw new DynamoDBJournalRejection(s"MaxItemSize exceeded: $itemSize > $MaxItemSize")
-    }
-    itemSize
+    keyLength +
+      eventData.getB.remaining +
+      serializerId.getN.getBytes.length +
+      manifestLength +
+      fieldLength +
+      ttlSize
   }
 
 }
