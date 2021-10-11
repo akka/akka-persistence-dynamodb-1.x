@@ -1,13 +1,17 @@
 package akka.persistence.dynamodb.journal
 
 import akka.persistence.PersistentRepr
-import akka.persistence.dynamodb.DynamoDBConfig
+import akka.persistence.dynamodb.{ DynamoDBConfig, DynamoDBTTLConfig }
 import com.amazonaws.services.dynamodbv2.model.AttributeValue
+
+import java.time.OffsetDateTime
 
 class ItemSizeVerifier(dynamoDBConfig: DynamoDBConfig) {
   import dynamoDBConfig._
 
-  def verifyItemSizeDidNotReachThreshold(repr: PersistentRepr, eventData: AttributeValue, serializerId: AttributeValue, manifest: String): Unit = {
+  private val ttlInEpochSecondsLength = OffsetDateTime.now().toEpochSecond.toString.length
+
+  def verifyItemSizeDidNotReachThreshold(repr: PersistentRepr, eventData: AttributeValue, serializerId: AttributeValue, manifest: String): Long = {
 
     val fieldLength =
       repr.persistenceId.getBytes.length +
@@ -22,16 +26,22 @@ class ItemSizeVerifier(dynamoDBConfig: DynamoDBConfig) {
         JournalName.length +
         KeyPayloadOverhead
 
+    val ttlSize = TTLConfig.map {
+      case DynamoDBTTLConfig(fieldName, _) => fieldName.length + ttlInEpochSecondsLength
+    }.getOrElse(0)
+
     val itemSize =
       keyLength +
         eventData.getB.remaining +
         serializerId.getN.getBytes.length +
         manifestLength +
-        fieldLength
+        fieldLength +
+        ttlSize
 
     if (itemSize > MaxItemSize) {
       throw new DynamoDBJournalRejection(s"MaxItemSize exceeded: $itemSize > $MaxItemSize")
     }
+    itemSize
   }
 
 }
