@@ -22,13 +22,13 @@ import com.typesafe.config.ConfigFactory
 import akka.persistence.dynamodb._
 
 class FailureReportingSpec extends TestKit(ActorSystem("FailureReportingSpec"))
-    with ImplicitSender
-    with WordSpecLike
-    with BeforeAndAfterAll
-    with Matchers
-    with ScalaFutures
-    with TypeCheckedTripleEquals
-    with DynamoDBUtils {
+  with ImplicitSender
+  with WordSpecLike
+  with BeforeAndAfterAll
+  with Matchers
+  with ScalaFutures
+  with TypeCheckedTripleEquals
+  with DynamoDBUtils {
 
   implicit val patience = PatienceConfig(5.seconds)
 

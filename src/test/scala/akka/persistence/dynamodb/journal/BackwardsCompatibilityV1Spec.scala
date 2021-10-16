@@ -19,13 +19,13 @@ import com.amazonaws.services.dynamodbv2.document.{ DynamoDB, Item }
 import com.typesafe.config.ConfigFactory
 
 class BackwardsCompatibilityV1Spec extends TestKit(ActorSystem("PartialAsyncSerializationSpec"))
-    with ImplicitSender
-    with WordSpecLike
-    with BeforeAndAfterAll
-    with Matchers
-    with ScalaFutures
-    with TypeCheckedTripleEquals
-    with DynamoDBUtils {
+  with ImplicitSender
+  with WordSpecLike
+  with BeforeAndAfterAll
+  with Matchers
+  with ScalaFutures
+  with TypeCheckedTripleEquals
+  with DynamoDBUtils {
 
   def loadV1VersionData(): Unit = {
     val config = ConfigFactory.load()

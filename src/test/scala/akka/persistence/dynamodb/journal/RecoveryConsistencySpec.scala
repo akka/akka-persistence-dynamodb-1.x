@@ -15,13 +15,13 @@ import java.util.{ HashMap => JHMap }
 import akka.persistence.dynamodb._
 
 class RecoveryConsistencySpec extends TestKit(ActorSystem("FailureReportingSpec"))
-    with ImplicitSender
-    with WordSpecLike
-    with BeforeAndAfterAll
-    with Matchers
-    with ScalaFutures
-    with TypeCheckedTripleEquals
-    with DynamoDBUtils {
+  with ImplicitSender
+  with WordSpecLike
+  with BeforeAndAfterAll
+  with Matchers
+  with ScalaFutures
+  with TypeCheckedTripleEquals
+  with DynamoDBUtils {
 
   override def beforeAll(): Unit = ensureJournalTableExists()
   override def afterAll(): Unit = {

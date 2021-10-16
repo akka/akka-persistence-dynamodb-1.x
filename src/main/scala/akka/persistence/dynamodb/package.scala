@@ -66,11 +66,11 @@ package object dynamodb {
     val dispatcher = system.dispatchers.lookup(settings.ClientDispatcher)
 
     class DynamoDBClient(
-      override val ec:        ExecutionContext,
-      override val dynamoDB:  AmazonDynamoDBAsyncClient,
-      override val settings:  DynamoDBConfig,
-      override val scheduler: Scheduler,
-      override val log:       LoggingAdapter) extends DynamoDBHelper
+        override val ec:        ExecutionContext,
+        override val dynamoDB:  AmazonDynamoDBAsyncClient,
+        override val settings:  DynamoDBConfig,
+        override val scheduler: Scheduler,
+        override val log:       LoggingAdapter) extends DynamoDBHelper
 
     new DynamoDBClient(dispatcher, client, settings, system.scheduler, Logging(system, "DynamoDBClient"))
   }

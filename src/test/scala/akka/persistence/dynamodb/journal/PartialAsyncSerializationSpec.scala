@@ -31,13 +31,13 @@ object PartialAsyncSerializationSpec {
 }
 
 class PartialAsyncSerializationSpec extends TestKit(ActorSystem("PartialAsyncSerializationSpec", PartialAsyncSerializationSpec.config))
-    with ImplicitSender
-    with WordSpecLike
-    with BeforeAndAfterAll
-    with Matchers
-    with ScalaFutures
-    with TypeCheckedTripleEquals
-    with DynamoDBUtils {
+  with ImplicitSender
+  with WordSpecLike
+  with BeforeAndAfterAll
+  with Matchers
+  with ScalaFutures
+  with TypeCheckedTripleEquals
+  with DynamoDBUtils {
 
   override def beforeAll(): Unit = {
     ensureJournalTableExists()

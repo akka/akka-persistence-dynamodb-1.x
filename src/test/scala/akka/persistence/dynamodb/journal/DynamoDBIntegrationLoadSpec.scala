@@ -95,7 +95,7 @@ my-dynamodb-journal {
   }
 
   class ProcessorCNoRecover(override val persistenceId: String, probe: ActorRef, recoverConfig: Recovery)
-      extends ProcessorC(persistenceId, probe) {
+    extends ProcessorC(persistenceId, probe) {
     override def recovery = recoverConfig
 
     override def preStart() = ()
@@ -111,12 +111,12 @@ my-dynamodb-journal {
 import DynamoDBIntegrationLoadSpec._
 
 class DynamoDBIntegrationLoadSpec
-    extends TestKit(ActorSystem("test", config))
-    with ImplicitSender
-    with WordSpecLike
-    with Matchers
-    with BeforeAndAfterAll
-    with DynamoDBUtils {
+  extends TestKit(ActorSystem("test", config))
+  with ImplicitSender
+  with WordSpecLike
+  with Matchers
+  with BeforeAndAfterAll
+  with DynamoDBUtils {
 
   override def beforeAll(): Unit = {
     super.beforeAll()
