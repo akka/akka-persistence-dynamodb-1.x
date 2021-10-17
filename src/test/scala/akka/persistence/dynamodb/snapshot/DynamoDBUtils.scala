@@ -15,6 +15,7 @@ import scala.collection.JavaConverters._
 import scala.concurrent.duration._
 import scala.concurrent.{ Await, Future }
 import org.scalatest.Suite
+import akka.persistence.dynamodb.journal.DynamoDBHelper
 
 trait DynamoDBUtils {
 
@@ -28,7 +29,7 @@ trait DynamoDBUtils {
   }
   import settings._
 
-  lazy val client = dynamoClient(system, settings)
+  lazy val client: DynamoDBHelper = dynamoClient(system, settings)
 
   implicit val timeout = Timeout(5.seconds)
 

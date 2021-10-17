@@ -29,7 +29,7 @@ trait DynamoDBUtils {
     new DynamoDBJournalConfig(config)
   }
 
-  lazy val client = dynamoClient(system, settings)
+  lazy val client: DynamoDBHelper = dynamoClient(system, settings)
 
   implicit val timeout = Timeout(5.seconds)
 
