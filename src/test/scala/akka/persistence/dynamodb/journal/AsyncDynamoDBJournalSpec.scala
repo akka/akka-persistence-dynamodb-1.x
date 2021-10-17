@@ -11,6 +11,7 @@ import akka.persistence.CapabilityFlag
 import com.typesafe.config.ConfigFactory
 import scala.concurrent.duration._
 import scala.concurrent.Await
+import akka.persistence.dynamodb.IntegSpec
 
 object AsyncDynamoDBJournalSpec {
 
@@ -28,7 +29,7 @@ object AsyncDynamoDBJournalSpec {
 
 }
 
-class AsyncDynamoDBJournalSpec extends JournalSpec(AsyncDynamoDBJournalSpec.config) with DynamoDBUtils {
+class AsyncDynamoDBJournalSpec extends JournalSpec(AsyncDynamoDBJournalSpec.config) with DynamoDBUtils with IntegSpec {
 
   override def beforeAll(): Unit = {
     super.beforeAll()
@@ -36,8 +37,8 @@ class AsyncDynamoDBJournalSpec extends JournalSpec(AsyncDynamoDBJournalSpec.conf
   }
 
   override def afterAll(): Unit = {
-    super.afterAll()
     client.shutdown()
+    super.afterAll()
   }
 
   override def writeMessages(fromSnr: Int, toSnr: Int, pid: String, sender: ActorRef, writerUuid: String): Unit = {

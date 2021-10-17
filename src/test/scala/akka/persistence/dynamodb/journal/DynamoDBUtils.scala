@@ -3,17 +3,20 @@
  */
 package akka.persistence.dynamodb.journal
 
-import com.amazonaws.services.dynamodbv2.model._
-import scala.concurrent.Await
+import akka.persistence.dynamodb.IntegSpec
+
 import akka.actor.ActorSystem
+import akka.persistence.Persistence
+import akka.persistence.PersistentRepr
+import akka.persistence.dynamodb._
+import akka.util.Timeout
+import com.amazonaws.services.dynamodbv2.model._
+import java.util.UUID
+import scala.collection.JavaConverters._
+import scala.concurrent.Await
 import scala.concurrent.Future
 import scala.concurrent.duration._
-import akka.persistence.Persistence
-import akka.util.Timeout
-import java.util.UUID
-import akka.persistence.PersistentRepr
-import scala.collection.JavaConverters._
-import akka.persistence.dynamodb._
+import org.scalatest.Suite
 
 trait DynamoDBUtils {
 
@@ -25,7 +28,6 @@ trait DynamoDBUtils {
     val config = c.getConfig(c.getString("akka.persistence.journal.plugin"))
     new DynamoDBJournalConfig(config)
   }
-  import settings._
 
   lazy val client = dynamoClient(system, settings)
 
@@ -33,7 +35,7 @@ trait DynamoDBUtils {
 
   def ensureJournalTableExists(read: Long = 10L, write: Long = 10L): Unit = {
     val create = schema
-      .withTableName(JournalTable)
+      .withTableName(settings.JournalTable)
       .withProvisionedThroughput(new ProvisionedThroughput(read, write))
 
     var names = Vector.empty[String]
@@ -48,7 +50,7 @@ trait DynamoDBUtils {
     val list = client.listTables(new ListTablesRequest).flatMap(complete)
 
     val setup = for {
-      exists <- list.map(_ contains JournalTable)
+      exists <- list.map(_ contains settings.JournalTable)
       _ <- {
         if (exists) Future.successful(())
         else client.createTable(create)

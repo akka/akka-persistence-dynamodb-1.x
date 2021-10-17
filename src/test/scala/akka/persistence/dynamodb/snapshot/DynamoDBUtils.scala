@@ -3,17 +3,18 @@
  */
 package akka.persistence.dynamodb.snapshot
 
-import java.util.UUID
+import akka.persistence.dynamodb.IntegSpec
+import akka.persistence.dynamodb.dynamoClient
 
 import akka.actor.ActorSystem
 import akka.persistence.PersistentRepr
 import akka.util.Timeout
 import com.amazonaws.services.dynamodbv2.model._
-
+import java.util.UUID
 import scala.collection.JavaConverters._
-import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration._
-import akka.persistence.dynamodb.dynamoClient
+import scala.concurrent.{ Await, Future }
+import org.scalatest.Suite
 
 trait DynamoDBUtils {
 

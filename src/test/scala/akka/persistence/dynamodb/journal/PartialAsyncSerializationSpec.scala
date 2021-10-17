@@ -3,14 +3,16 @@
  */
 package akka.persistence.dynamodb.journal
 
+import akka.persistence.dynamodb.IntegSpec
+
+import akka.actor.ActorSystem
+import akka.persistence.JournalProtocol._
+import akka.persistence._
+import akka.testkit._
+import com.typesafe.config.ConfigFactory
 import org.scalactic.TypeCheckedTripleEquals
 import org.scalatest._
 import org.scalatest.concurrent.ScalaFutures
-import akka.actor.ActorSystem
-import akka.persistence._
-import akka.persistence.JournalProtocol._
-import akka.testkit._
-import com.typesafe.config.ConfigFactory
 
 trait SerializeAsync
 
@@ -37,15 +39,17 @@ class PartialAsyncSerializationSpec extends TestKit(ActorSystem("PartialAsyncSer
   with Matchers
   with ScalaFutures
   with TypeCheckedTripleEquals
-  with DynamoDBUtils {
+  with DynamoDBUtils
+  with IntegSpec {
 
   override def beforeAll(): Unit = {
+    super.beforeAll()
     ensureJournalTableExists()
-
   }
   override def afterAll(): Unit = {
     client.shutdown()
     system.terminate().futureValue
+    super.afterAll()
   }
 
   override val persistenceId = "PartialAsyncSerializationSpec"

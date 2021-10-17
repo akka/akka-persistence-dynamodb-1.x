@@ -22,6 +22,8 @@ libraryDependencies ++= Seq(
 )
 
 Test / parallelExecution := false
+// required by test-containers-scala
+Test / fork := true
 logBuffered := false
 Test / testOptions += Tests.Argument(TestFrameworks.ScalaTest, "-oDF")
 

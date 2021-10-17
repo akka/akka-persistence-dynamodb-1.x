@@ -3,13 +3,15 @@
  */
 package akka.persistence.dynamodb.journal
 
+import akka.persistence.dynamodb.IntegSpec
+
+import akka.actor.ActorSystem
+import akka.persistence.JournalProtocol._
+import akka.persistence._
 import akka.testkit._
 import org.scalactic.TypeCheckedTripleEquals
 import org.scalatest._
 import org.scalatest.concurrent.ScalaFutures
-import akka.actor.ActorSystem
-import akka.persistence._
-import akka.persistence.JournalProtocol._
 
 class DeletionSpec extends TestKit(ActorSystem("FailureReportingSpec"))
   with ImplicitSender
@@ -18,9 +20,14 @@ class DeletionSpec extends TestKit(ActorSystem("FailureReportingSpec"))
   with Matchers
   with ScalaFutures
   with TypeCheckedTripleEquals
-  with DynamoDBUtils {
+  with DynamoDBUtils
+  with IntegSpec {
 
-  override def beforeAll(): Unit = ensureJournalTableExists()
+  override def beforeAll(): Unit = {
+    super.beforeAll()
+    ensureJournalTableExists()
+  }
+
   override def afterAll(): Unit = {
     /*
      * The last operation is a ListAll which may spawn requests that linger
@@ -30,10 +37,11 @@ class DeletionSpec extends TestKit(ActorSystem("FailureReportingSpec"))
     Thread.sleep(500)
     system.terminate().futureValue
     client.shutdown()
+    super.afterAll()
   }
 
   override val persistenceId = "DeletionSpec"
-  val journal = Persistence(system).journalFor("")
+  lazy val journal = Persistence(system).journalFor("")
 
   "DynamoDB Journal (Deletion)" must {
 

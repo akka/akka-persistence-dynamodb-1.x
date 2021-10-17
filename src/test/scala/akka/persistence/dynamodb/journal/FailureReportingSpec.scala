@@ -28,7 +28,8 @@ class FailureReportingSpec extends TestKit(ActorSystem("FailureReportingSpec"))
   with Matchers
   with ScalaFutures
   with TypeCheckedTripleEquals
-  with DynamoDBUtils {
+  with DynamoDBUtils
+  with IntegSpec {
 
   implicit val patience = PatienceConfig(5.seconds)
 
@@ -50,11 +51,15 @@ class FailureReportingSpec extends TestKit(ActorSystem("FailureReportingSpec"))
     rej.cause.getMessage should include regex msg
   }
 
-  override def beforeAll(): Unit = ensureJournalTableExists()
+  override def beforeAll(): Unit = {
+    super.beforeAll()
+    ensureJournalTableExists()
+  }
 
   override def afterAll(): Unit = {
     client.shutdown()
     system.terminate().futureValue
+    super.afterAll()
   }
 
   "DynamoDB Journal Failure Reporting" must {
@@ -108,7 +113,7 @@ class FailureReportingSpec extends TestKit(ActorSystem("FailureReportingSpec"))
       val config = ConfigFactory.parseString(
         """
 dynamodb-journal {
-  endpoint = "http://localhost:8000"
+  endpoint = "http://localhost:8888"
   aws-access-key-id = "AWS_ACCESS_KEY_ID"
   aws-secret-access-key = "AWS_SECRET_ACCESS_KEY"
 }

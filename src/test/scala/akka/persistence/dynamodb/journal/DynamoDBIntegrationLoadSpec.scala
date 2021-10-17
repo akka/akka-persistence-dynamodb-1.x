@@ -9,6 +9,7 @@ import akka.persistence._
 import akka.testkit._
 import com.typesafe.config.ConfigFactory
 import org.scalatest._
+import akka.persistence.dynamodb.IntegSpec
 
 /**
  * This class is pulled from https://github.com/krasserm/akka-persistence-cassandra/
@@ -19,13 +20,15 @@ object DynamoDBIntegrationLoadSpec {
   val config = ConfigFactory.parseString("""
 my-dynamodb-journal {
   journal-table = "integrationLoadSpec"
+  endpoint =  "http://localhost:8888"
   endpoint = ${?AWS_DYNAMODB_ENDPOINT}
   aws-access-key-id = "set something in case no real creds are there"
   aws-access-key-id = ${?AWS_ACCESS_KEY_ID}
   aws-secret-access-key = "set something in case no real creds are there"
   aws-secret-access-key = ${?AWS_SECRET_ACCESS_KEY}
 }
-""").resolve.withFallback(ConfigFactory.load())
+akka.persistence.snapshot-store.plugin = ""
+""").withFallback(ConfigFactory.load()).resolve()
 
   case class DeleteTo(snr: Long)
 
@@ -116,7 +119,8 @@ class DynamoDBIntegrationLoadSpec
   with WordSpecLike
   with Matchers
   with BeforeAndAfterAll
-  with DynamoDBUtils {
+  with DynamoDBUtils
+  with IntegSpec {
 
   override def beforeAll(): Unit = {
     super.beforeAll()
@@ -126,6 +130,7 @@ class DynamoDBIntegrationLoadSpec
   override def afterAll(): Unit = {
     client.shutdown()
     system.terminate()
+    super.afterAll()
   }
 
   def subscribeToRangeDeletion(probe: TestProbe): Unit =

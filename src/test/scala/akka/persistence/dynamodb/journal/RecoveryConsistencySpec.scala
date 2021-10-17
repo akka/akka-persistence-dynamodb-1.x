@@ -21,12 +21,18 @@ class RecoveryConsistencySpec extends TestKit(ActorSystem("FailureReportingSpec"
   with Matchers
   with ScalaFutures
   with TypeCheckedTripleEquals
-  with DynamoDBUtils {
+  with DynamoDBUtils
+  with IntegSpec {
 
-  override def beforeAll(): Unit = ensureJournalTableExists()
+  override def beforeAll(): Unit = {
+    super.beforeAll()
+    ensureJournalTableExists()
+  }
+
   override def afterAll(): Unit = {
     client.shutdown()
     system.terminate().futureValue
+    super.afterAll()
   }
 
   override val persistenceId = "RecoveryConsistencySpec"
