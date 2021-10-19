@@ -117,7 +117,7 @@ my-dynamodb-snapshot-store {
 Before enabling the TTL feature, make sure to have an understanding of the potential impacts detailed below.
 
 #### Don't rely on the TTL for business logic related to the expiration
-As per specified in the AWS DynamoDB configuration,
+As per specified in the [AWS DynamoDB configuration](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/howitworks-ttl.html),
 > Items that have expired, but haven’t yet been deleted by TTL, still appear in reads, queries, and scans. If you do not want expired items in the result set, you must filter them out.
 
 For the moment, the implementation of the TTL in this library does not filter items out on read from database. 
@@ -145,7 +145,7 @@ As a consequence, a separate TTL for snapshot should be preferred. The journal T
 
 TODO WHY?
 
-#### Only new item are going to get expired
+#### Only new items are going to get expired
 Once the TTL feature get enabled, **only** new inserted journal events and snapshot will be eventually removed. In case some event related to an entity are persisted before the feature being enabled, only new inserted events would eventually expire. That could lead to the same problem mentioned above could happen in that case as well. The entity recovered could be in an inconsistent state.
 
 Storage Semantics
