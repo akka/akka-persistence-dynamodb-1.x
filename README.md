@@ -88,7 +88,7 @@ DynamoDB Time To Live
 ---------------------
 DynamoDB offers a Time to Live option to remove items after a delay. Once the date specified in the item passed today, the item is **eventually** removed from the table. 
 
-In DynamoDB, this feature can be activated in a par table basis by specifying the name of the field containing the expiring date.  
+In DynamoDB, this feature can be activated in a per-table basis by specifying the name of the field containing the expiring date.  
 
 Expiring items is available for journal and snapshot tables. In order to activate it, `dynamodb-item-ttl-config.field-name` and `dynamodb-item-ttl-config.ttl` need to be specified:
 ~~~
