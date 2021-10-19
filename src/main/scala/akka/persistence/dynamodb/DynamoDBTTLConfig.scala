@@ -32,8 +32,8 @@ object DynamoDBTTLConfigReader {
 
   def readTTLConfig(c: Config): Option[DynamoDBTTLConfig] = {
     for {
-      fieldName <- Try(c getString configFieldName).toOption
-      if fieldName.trim.nonEmpty
+      fieldName <- Try(c getString configFieldName).toOption.map(_.trim)
+      if fieldName.nonEmpty
       ttl <- Try(c getDuration configTtlName).toOption
     } yield DynamoDBTTLConfig(
       fieldName = fieldName,
