@@ -19,8 +19,8 @@ trait SerializeAsync
 case class TestAsyncMessage(sequence: Int) extends SerializeAsync
 
 object PartialAsyncSerializationSpec {
-  val config = ConfigFactory.parseString(
-    """
+  val config = ConfigFactory
+    .parseString("""
       |akka.actor {
       |  serializers {
       |    test = "akka.persistence.dynamodb.journal.TestSerializer"
@@ -29,18 +29,20 @@ object PartialAsyncSerializationSpec {
       |    "akka.persistence.dynamodb.journal.SerializeAsync" = test
       |  }
       |}
-    """.stripMargin).withFallback(ConfigFactory.load())
+    """.stripMargin)
+    .withFallback(ConfigFactory.load())
 }
 
-class PartialAsyncSerializationSpec extends TestKit(ActorSystem("PartialAsyncSerializationSpec", PartialAsyncSerializationSpec.config))
-  with ImplicitSender
-  with WordSpecLike
-  with BeforeAndAfterAll
-  with Matchers
-  with ScalaFutures
-  with TypeCheckedTripleEquals
-  with DynamoDBUtils
-  with IntegSpec {
+class PartialAsyncSerializationSpec
+    extends TestKit(ActorSystem("PartialAsyncSerializationSpec", PartialAsyncSerializationSpec.config))
+    with ImplicitSender
+    with WordSpecLike
+    with BeforeAndAfterAll
+    with Matchers
+    with ScalaFutures
+    with TypeCheckedTripleEquals
+    with DynamoDBUtils
+    with IntegSpec {
 
   override def beforeAll(): Unit = {
     super.beforeAll()
@@ -53,7 +55,7 @@ class PartialAsyncSerializationSpec extends TestKit(ActorSystem("PartialAsyncSer
   }
 
   override val persistenceId = "PartialAsyncSerializationSpec"
-  lazy val journal = Persistence(system).journalFor("")
+  lazy val journal           = Persistence(system).journalFor("")
 
   import settings._
 
@@ -75,7 +77,7 @@ class PartialAsyncSerializationSpec extends TestKit(ActorSystem("PartialAsyncSer
       journal ! WriteMessages(writes, testActor, 1)
       journal ! ReplayMessages(1, 0, Long.MaxValue, persistenceId, probe.ref)
       expectMsg(WriteMessagesSuccessful)
-      (1 to messages) foreach (i => {
+      (1 to messages).foreach(i => {
         val msg = expectMsgType[WriteMessageSuccess]
         msg.persistent.sequenceNr.toInt should ===(i)
         if (i % 2 == 0) {

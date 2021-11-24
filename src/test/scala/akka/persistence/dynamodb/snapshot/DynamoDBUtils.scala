@@ -23,7 +23,7 @@ trait DynamoDBUtils {
   implicit val executionContext = system.dispatcher
 
   lazy val settings: DynamoDBSnapshotConfig = {
-    val c = system.settings.config
+    val c      = system.settings.config
     val config = c.getConfig(c.getString("akka.persistence.snapshot-store.plugin"))
     new DynamoDBSnapshotConfig(config)
   }
@@ -45,14 +45,14 @@ trait DynamoDBUtils {
       new KeySchemaElement().withAttributeName(SequenceNr).withKeyType(KeyType.RANGE))
     .withLocalSecondaryIndexes(
       new LocalSecondaryIndex()
-        .withIndexName(TimestampIndex).withKeySchema(
+        .withIndexName(TimestampIndex)
+        .withKeySchema(
           new KeySchemaElement().withAttributeName(Key).withKeyType(KeyType.HASH),
-          new KeySchemaElement().withAttributeName(Timestamp).withKeyType(KeyType.RANGE)).withProjection(new Projection().withProjectionType(ProjectionType.ALL)))
+          new KeySchemaElement().withAttributeName(Timestamp).withKeyType(KeyType.RANGE))
+        .withProjection(new Projection().withProjectionType(ProjectionType.ALL)))
 
   def ensureSnapshotTableExists(read: Long = 10L, write: Long = 10L): Unit = {
-    val create = schema
-      .withTableName(Table)
-      .withProvisionedThroughput(new ProvisionedThroughput(read, write))
+    val create = schema.withTableName(Table).withProvisionedThroughput(new ProvisionedThroughput(read, write))
 
     var names = Vector.empty[String]
     lazy val complete: ListTablesResult => Future[Vector[String]] = aws =>

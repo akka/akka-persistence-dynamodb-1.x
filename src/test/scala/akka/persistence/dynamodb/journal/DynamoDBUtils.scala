@@ -24,7 +24,7 @@ trait DynamoDBUtils {
   import system.dispatcher
 
   lazy val settings = {
-    val c = system.settings.config
+    val c      = system.settings.config
     val config = c.getConfig(c.getString("akka.persistence.journal.plugin"))
     new DynamoDBJournalConfig(config)
   }
@@ -34,9 +34,8 @@ trait DynamoDBUtils {
   implicit val timeout = Timeout(5.seconds)
 
   def ensureJournalTableExists(read: Long = 10L, write: Long = 10L): Unit = {
-    val create = schema
-      .withTableName(settings.JournalTable)
-      .withProvisionedThroughput(new ProvisionedThroughput(read, write))
+    val create =
+      schema.withTableName(settings.JournalTable).withProvisionedThroughput(new ProvisionedThroughput(read, write))
 
     var names = Vector.empty[String]
     lazy val complete: ListTablesResult => Future[Vector[String]] = aws =>
@@ -59,7 +58,7 @@ trait DynamoDBUtils {
     Await.result(setup, 5.seconds)
   }
 
-  private val writerUuid = UUID.randomUUID.toString
+  private val writerUuid    = UUID.randomUUID.toString
   def persistenceId: String = ???
 
   var nextSeqNr = 1

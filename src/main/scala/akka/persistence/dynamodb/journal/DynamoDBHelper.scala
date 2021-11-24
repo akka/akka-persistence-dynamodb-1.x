@@ -34,10 +34,11 @@ trait DynamoDBHelper {
 
   def shutdown(): Unit = dynamoDB.shutdown()
 
-  private var reporter: ActorRef = _
+  private var reporter: ActorRef       = _
   def setReporter(ref: ActorRef): Unit = reporter = ref
 
-  private def send[In <: AmazonWebServiceRequest, Out](aws: In, func: AsyncHandler[In, Out] => juc.Future[Out])(implicit d: Describe[_ >: In]): Future[Out] = {
+  private def send[In <: AmazonWebServiceRequest, Out](aws: In, func: AsyncHandler[In, Out] => juc.Future[Out])(implicit
+      d: Describe[_ >: In]): Future[Out] = {
 
     def name = d.desc(aws)
 
@@ -45,14 +46,15 @@ trait DynamoDBHelper {
       val p = Promise[Out]
 
       val handler = new AsyncHandler[In, Out] {
-        override def onError(ex: Exception) = ex match {
-          case e: ProvisionedThroughputExceededException =>
-            p.tryFailure(ex)
-          case _ =>
-            val n = name
-            log.error(ex, "failure while executing {}", n)
-            p.tryFailure(new DynamoDBJournalFailure("failure while executing " + n, ex))
-        }
+        override def onError(ex: Exception) =
+          ex match {
+            case e: ProvisionedThroughputExceededException =>
+              p.tryFailure(ex)
+            case _ =>
+              val n = name
+              log.error(ex, "failure while executing {}", n)
+              p.tryFailure(new DynamoDBJournalFailure("failure while executing " + n, ex))
+          }
         override def onSuccess(req: In, resp: Out) = p.trySuccess(resp)
       }
 
@@ -92,8 +94,14 @@ trait DynamoDBHelper {
   trait Describe[T] {
     def desc(t: T): String
     protected def formatKey(i: Item): String = {
-      val key = i.get(Key) match { case null => "<none>" case x => x.getS }
-      val sort = i.get(Sort) match { case null => "<none>" case x => x.getN }
+      val key = i.get(Key) match {
+        case null => "<none>"
+        case x    => x.getS
+      }
+      val sort = i.get(Sort) match {
+        case null => "<none>"
+        case x    => x.getN
+      }
       s"[$Key=$key,$Sort=$sort]"
     }
   }
@@ -124,7 +132,7 @@ trait DynamoDBHelper {
     def desc(aws: BatchGetItemRequest): String = {
       val entry = aws.getRequestItems.entrySet.iterator.next()
       val table = entry.getKey
-      val keys = entry.getValue.getKeys.asScala.map(formatKey)
+      val keys  = entry.getValue.getKeys.asScala.map(formatKey)
       s"BatchGetItemRequest($table, ${keys.mkString("(", ",", ")")})"
     }
   }

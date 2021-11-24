@@ -15,6 +15,6 @@ trait IntegSpec extends ForAllTestContainer { self: Suite =>
   override val container: Container = FixedHostPortGenericContainer(
     "amazon/dynamodb-local:latest",
     exposedContainerPort = 8000,
-    exposedHostPort      = 8888,
-    waitStrategy         = new HttpWaitStrategy().forPath("/").forStatusCode(400))
+    exposedHostPort = 8888,
+    waitStrategy = new HttpWaitStrategy().forPath("/").forStatusCode(400))
 }

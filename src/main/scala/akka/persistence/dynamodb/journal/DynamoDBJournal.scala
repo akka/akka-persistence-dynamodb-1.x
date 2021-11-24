@@ -30,7 +30,7 @@ import akka.actor.ActorRef
 import scala.concurrent.Promise
 import akka.persistence.dynamodb._
 
-class DynamoDBJournalFailure(message: String, cause: Throwable = null) extends RuntimeException(message, cause)
+class DynamoDBJournalFailure(message: String, cause: Throwable = null)   extends RuntimeException(message, cause)
 class DynamoDBJournalRejection(message: String, cause: Throwable = null) extends RuntimeException(message, cause)
 
 /**
@@ -71,12 +71,16 @@ private[akka] case class SetDBHelperReporter(ref: ActorRef)
  */
 case class Purged(persistenceId: String)
 
-class DynamoDBJournal(config: Config) extends AsyncWriteJournal with DynamoDBRecovery with DynamoDBJournalRequests with ActorLogging {
+class DynamoDBJournal(config: Config)
+    extends AsyncWriteJournal
+    with DynamoDBRecovery
+    with DynamoDBJournalRequests
+    with ActorLogging {
   import context.dispatcher
 
   implicit val materializer = ActorMaterializer()
 
-  val extension = Persistence(context.system)
+  val extension     = Persistence(context.system)
   val serialization = SerializationExtension(context.system)
 
   val settings = new DynamoDBJournalConfig(config)
@@ -97,7 +101,7 @@ class DynamoDBJournal(config: Config) extends AsyncWriteJournal with DynamoDBRec
   private val opQueue: JMap[String, Future[Done]] = new JHMap
 
   override def asyncWriteMessages(messages: immutable.Seq[AtomicWrite]): Future[immutable.Seq[Try[Unit]]] = {
-    val p = Promise[Done]
+    val p   = Promise[Done]
     val pid = messages.head.persistenceId
     opQueue.put(pid, p.future)
 
@@ -113,8 +117,10 @@ class DynamoDBJournal(config: Config) extends AsyncWriteJournal with DynamoDBRec
 
   override def asyncReadHighestSequenceNr(persistenceId: String, fromSequenceNr: Long): Future[Long] =
     opQueue.get(persistenceId) match {
-      case null => logFailure(s"read-highest-sequence-number($persistenceId)")(readSequenceNr(persistenceId, highest = true))
-      case f    => f.flatMap(_ => logFailure(s"read-highest($persistenceId)")(readSequenceNr(persistenceId, highest = true)))
+      case null =>
+        logFailure(s"read-highest-sequence-number($persistenceId)")(readSequenceNr(persistenceId, highest = true))
+      case f =>
+        f.flatMap(_ => logFailure(s"read-highest($persistenceId)")(readSequenceNr(persistenceId, highest = true)))
     }
 
   /**
@@ -133,10 +139,10 @@ class DynamoDBJournal(config: Config) extends AsyncWriteJournal with DynamoDBRec
   override def asyncDeleteMessagesTo(persistenceId: String, toSequenceNr: Long): Future[Unit] =
     logFailure(s"delete($persistenceId, upto=$toSequenceNr)") {
       log.debug("delete-messages persistenceId={} to={}", persistenceId, toSequenceNr)
-      val lowF = readSequenceNr(persistenceId, highest = false)
+      val lowF  = readSequenceNr(persistenceId, highest = false)
       val highF = readSequenceNr(persistenceId, highest = true)
       for {
-        lowest <- lowF
+        lowest  <- lowF
         highest <- highF
         val upTo = Math.min(toSequenceNr, highest)
         _ <- if (upTo + 1 > lowest) setLS(persistenceId, to = upTo + 1) else Future.successful(Done)
@@ -148,7 +154,7 @@ class DynamoDBJournal(config: Config) extends AsyncWriteJournal with DynamoDBRec
 
   private def listAll(persistenceId: String): Future[ListAllResult] =
     for {
-      low <- readAllSequenceNr(persistenceId, highest = false)
+      low  <- readAllSequenceNr(persistenceId, highest = false)
       high <- readAllSequenceNr(persistenceId, highest = true)
       seqs <- listAllSeqNr(persistenceId)
     } yield ListAllResult(persistenceId, low, high, seqs)
@@ -156,15 +162,15 @@ class DynamoDBJournal(config: Config) extends AsyncWriteJournal with DynamoDBRec
   private def purge(persistenceId: String): Future[Done] =
     for {
       highest <- readSequenceNr(persistenceId, highest = true)
-      _ <- deleteMessages(persistenceId, 0, highest)
-      _ <- removeLS(persistenceId)
-      _ <- removeHS(persistenceId)
+      _       <- deleteMessages(persistenceId, 0, highest)
+      _       <- removeLS(persistenceId)
+      _       <- removeHS(persistenceId)
     } yield Done
 
   override def receivePluginInternal = {
     case OpFinished(persistenceId, f)    => opQueue.remove(persistenceId, f)
-    case ListAll(persistenceId, replyTo) => listAll(persistenceId) pipeTo replyTo
-    case Purge(persistenceId, replyTo)   => purge(persistenceId).map(_ => Purged(persistenceId)) pipeTo replyTo
+    case ListAll(persistenceId, replyTo) => listAll(persistenceId).pipeTo(replyTo)
+    case Purge(persistenceId, replyTo)   => purge(persistenceId).map(_ => Purged(persistenceId)).pipeTo(replyTo)
     case SetDBHelperReporter(ref)        => dynamo.setReporter(ref)
   }
 
@@ -195,8 +201,11 @@ class DynamoDBJournal(config: Config) extends AsyncWriteJournal with DynamoDBRec
     item
   }
 
-  def logFailure[T](desc: String)(f: Future[T]): Future[T] = f.transform(identity(_), ex => {
-    log.error(ex, "operation failed: " + desc)
-    ex
-  })
+  def logFailure[T](desc: String)(f: Future[T]): Future[T] =
+    f.transform(
+      identity(_),
+      ex => {
+        log.error(ex, "operation failed: " + desc)
+        ex
+      })
 }

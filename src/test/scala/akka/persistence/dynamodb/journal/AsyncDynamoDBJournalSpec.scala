@@ -15,8 +15,8 @@ import akka.persistence.dynamodb.IntegSpec
 
 object AsyncDynamoDBJournalSpec {
 
-  val config = ConfigFactory.parseString(
-    """
+  val config = ConfigFactory
+    .parseString("""
       |akka.actor {
       |  serializers {
       |    test = "akka.persistence.dynamodb.journal.TestSerializer"
@@ -25,7 +25,8 @@ object AsyncDynamoDBJournalSpec {
       |    "java.io.Serializable" = test
       |  }
       |}
-    """.stripMargin).withFallback(ConfigFactory.load())
+    """.stripMargin)
+    .withFallback(ConfigFactory.load())
 
 }
 

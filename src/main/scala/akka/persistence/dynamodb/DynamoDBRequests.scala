@@ -32,9 +32,7 @@ private[dynamodb] trait DynamoDBRequests {
     batchWriteReq(Collections.singletonMap(Table, writes.asJava))
 
   def batchWriteReq(items: JMap[String, JList[WriteRequest]]): BatchWriteItemRequest =
-    new BatchWriteItemRequest()
-      .withRequestItems(items)
-      .withReturnConsumedCapacity(ReturnConsumedCapacity.TOTAL)
+    new BatchWriteItemRequest().withRequestItems(items).withReturnConsumedCapacity(ReturnConsumedCapacity.TOTAL)
 
   /*
    * Request execution helpers.
@@ -45,17 +43,15 @@ private[dynamodb] trait DynamoDBRequests {
    * logging all errors. The returned Future never fails.
    */
   def doBatch(desc: Seq[WriteRequest] => String, writes: Seq[WriteRequest]): Future[Done] =
-    Future.sequence {
-      writes
-        .grouped(MaxBatchWrite)
-        .map { batch =>
-          dynamo.batchWriteItem(batchWriteReq(batch))
-            .flatMap(sendUnprocessedItems(_))
-            .recover {
-              case NonFatal(ex) => log.error(ex, "cannot " + desc(batch))
-            }
+    Future
+      .sequence {
+        writes.grouped(MaxBatchWrite).map { batch =>
+          dynamo.batchWriteItem(batchWriteReq(batch)).flatMap(sendUnprocessedItems(_)).recover {
+            case NonFatal(ex) => log.error(ex, "cannot " + desc(batch))
+          }
         }
-    }.map(_ => Done)
+      }
+      .map(_ => Done)
 
   /**
    * Sends the unprocessed batch write items, and sets the back-off.
@@ -66,9 +62,9 @@ private[dynamodb] trait DynamoDBRequests {
    * the retries from the client, then we are hosed and cannot continue; that is why we have a RuntimeException here
    */
   private def sendUnprocessedItems(
-    result:           BatchWriteItemResult,
-    retriesRemaining: Int                  = 10,
-    backoff:          FiniteDuration       = 1.millis): Future[BatchWriteItemResult] = {
+      result: BatchWriteItemResult,
+      retriesRemaining: Int = 10,
+      backoff: FiniteDuration = 1.millis): Future[BatchWriteItemResult] = {
     val unprocessed: Int = result.getUnprocessedItems.get(Table) match {
       case null  => 0
       case items => items.size
@@ -78,7 +74,8 @@ private[dynamodb] trait DynamoDBRequests {
       throw new RuntimeException(s"unable to batch write ${result.getUnprocessedItems.get(Table)} after 10 tries")
     } else {
       val rest = batchWriteReq(result.getUnprocessedItems)
-      after(backoff, context.system.scheduler)(dynamo.batchWriteItem(rest).flatMap(r => sendUnprocessedItems(r, retriesRemaining - 1, backoff * 2)))
+      after(backoff, context.system.scheduler)(
+        dynamo.batchWriteItem(rest).flatMap(r => sendUnprocessedItems(r, retriesRemaining - 1, backoff * 2)))
     }
   }
 

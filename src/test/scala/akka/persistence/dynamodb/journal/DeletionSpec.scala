@@ -13,15 +13,16 @@ import org.scalactic.TypeCheckedTripleEquals
 import org.scalatest._
 import org.scalatest.concurrent.ScalaFutures
 
-class DeletionSpec extends TestKit(ActorSystem("FailureReportingSpec"))
-  with ImplicitSender
-  with WordSpecLike
-  with BeforeAndAfterAll
-  with Matchers
-  with ScalaFutures
-  with TypeCheckedTripleEquals
-  with DynamoDBUtils
-  with IntegSpec {
+class DeletionSpec
+    extends TestKit(ActorSystem("FailureReportingSpec"))
+    with ImplicitSender
+    with WordSpecLike
+    with BeforeAndAfterAll
+    with Matchers
+    with ScalaFutures
+    with TypeCheckedTripleEquals
+    with DynamoDBUtils
+    with IntegSpec {
 
   override def beforeAll(): Unit = {
     super.beforeAll()
@@ -41,7 +42,7 @@ class DeletionSpec extends TestKit(ActorSystem("FailureReportingSpec"))
   }
 
   override val persistenceId = "DeletionSpec"
-  lazy val journal = Persistence(system).journalFor("")
+  lazy val journal           = Persistence(system).journalFor("")
 
   "DynamoDB Journal (Deletion)" must {
 
@@ -56,14 +57,14 @@ class DeletionSpec extends TestKit(ActorSystem("FailureReportingSpec"))
       val msgs = (1 to 149).map(i => AtomicWrite(persistentRepr(s"a-$i")))
       journal ! WriteMessages(msgs, testActor, 1)
       expectMsg(WriteMessagesSuccessful)
-      (1 to 149) foreach (i => expectMsgType[WriteMessageSuccess].persistent.sequenceNr.toInt should ===(i))
+      (1 to 149).foreach(i => expectMsgType[WriteMessageSuccess].persistent.sequenceNr.toInt should ===(i))
       journal ! ListAll(persistenceId, testActor)
       expectMsg(ListAllResult(persistenceId, Set.empty, Set(100L), (1L to 149)))
 
       val more = AtomicWrite((150 to 200).map(i => persistentRepr("b-$i")))
       journal ! WriteMessages(more :: Nil, testActor, 1)
       expectMsg(WriteMessagesSuccessful)
-      (150 to 200) foreach (i => expectMsgType[WriteMessageSuccess].persistent.sequenceNr.toInt should ===(i))
+      (150 to 200).foreach(i => expectMsgType[WriteMessageSuccess].persistent.sequenceNr.toInt should ===(i))
       journal ! ListAll(persistenceId, testActor)
       expectMsg(ListAllResult(persistenceId, Set.empty, Set(100L, 200L), (1L to 200)))
     }
