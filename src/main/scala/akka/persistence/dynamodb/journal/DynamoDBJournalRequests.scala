@@ -3,26 +3,29 @@
  */
 package akka.persistence.dynamodb.journal
 
-import java.nio.ByteBuffer
-import java.util.Collections
-
-import akka.persistence.{ AtomicWrite, PersistentRepr }
-import com.amazonaws.services.dynamodbv2.model._
-
-import scala.collection.JavaConverters._
-import scala.concurrent.Future
-import scala.concurrent.duration._
-import scala.util.{ Failure, Success, Try }
-import scala.util.control.NonFatal
 import akka.Done
 import akka.actor.ExtendedActorSystem
 import akka.pattern.after
 import akka.persistence.dynamodb._
-import akka.serialization.{ AsyncSerializer, Serialization, Serializers }
+import akka.persistence.{ AtomicWrite, PersistentRepr }
+import akka.serialization.{ AsyncSerializer, Serialization, Serializer, Serializers }
+import com.amazonaws.services.dynamodbv2.model._
+
+import java.nio.ByteBuffer
+import java.time.OffsetDateTime
+import java.util.Collections
+import scala.collection.JavaConverters._
+import scala.concurrent.Future
+import scala.concurrent.duration._
+import scala.util.control.NonFatal
+import scala.util.{ Failure, Success, Try }
 
 trait DynamoDBJournalRequests extends DynamoDBRequests {
   this: DynamoDBJournal =>
+
   import settings._
+
+  private lazy val itemSizeVerifier = new ItemSizeCalculator(settings)
 
   /**
    * Write all messages in a sequence of AtomicWrites. Care must be taken to
@@ -44,6 +47,7 @@ trait DynamoDBJournalRequests extends DynamoDBRequests {
             writeMessages(write).flatMap(result => rec(remainder, bubbleUpFailures(result) :: acc))
           case Nil => Future.successful(acc.reverse)
         }
+
       rec(writes.toList, Nil)
     }
 
@@ -165,51 +169,63 @@ trait DynamoDBJournalRequests extends DynamoDBRequests {
     try {
       val reprPayload: AnyRef = repr.payload.asInstanceOf[AnyRef]
       val serializer          = serialization.serializerFor(reprPayload.getClass)
-      val fut = serializer match {
-        case aS: AsyncSerializer =>
-          Serialization.withTransportInformation(context.system.asInstanceOf[ExtendedActorSystem]) { () =>
-            aS.toBinaryAsync(reprPayload)
-          }
-        case _ =>
-          Future {
-            ByteBuffer.wrap(serialization.serialize(reprPayload).get).array()
-          }
-      }
 
-      fut.map { serialized =>
+      serializePersistentRepr(reprPayload, serializer).map { serialized =>
         val eventData    = B(serialized)
         val serializerId = N(serializer.identifier)
 
-        val fieldLength = repr.persistenceId.getBytes.length + repr.sequenceNr.toString.getBytes.length +
-          repr.writerUuid.getBytes.length + repr.manifest.getBytes.length
+        val manifest = Serializers.manifestFor(serializer, reprPayload)
 
-        val manifest       = Serializers.manifestFor(serializer, reprPayload)
-        val manifestLength = if (manifest.isEmpty) 0 else manifest.getBytes.length
-
-        val itemSize = keyLength(
-            repr.persistenceId,
-            repr.sequenceNr) + eventData.getB.remaining + serializerId.getN.getBytes.length + manifestLength + fieldLength
-
+        val itemSize = itemSizeVerifier.getItemSize(repr, eventData, serializerId, manifest)
         if (itemSize > MaxItemSize) {
           throw new DynamoDBJournalRejection(s"MaxItemSize exceeded: $itemSize > $MaxItemSize")
         }
-        val item: Item = messageKey(repr.persistenceId, repr.sequenceNr)
 
-        item.put(PersistentId, S(repr.persistenceId))
-        item.put(SequenceNr, N(repr.sequenceNr))
-        item.put(Event, eventData)
-        item.put(WriterUuid, S(repr.writerUuid))
-        item.put(SerializerId, serializerId)
-        if (repr.manifest.nonEmpty) {
-          item.put(Manifest, S(repr.manifest))
-        }
-        if (manifest.nonEmpty) {
-          item.put(SerializerManifest, S(manifest))
-        }
-        item
+        createItem(repr, eventData, serializerId, manifest)
       }
     } catch {
       case NonFatal(e) => Future.failed(e)
+    }
+  }
+
+  private def createItem(
+      repr: PersistentRepr,
+      eventData: AttributeValue,
+      serializerId: AttributeValue,
+      manifest: String) = {
+    val item: Item = messageKey(repr.persistenceId, repr.sequenceNr)
+
+    item.put(PersistentId, S(repr.persistenceId))
+    item.put(SequenceNr, N(repr.sequenceNr))
+    item.put(Event, eventData)
+    item.put(WriterUuid, S(repr.writerUuid))
+    item.put(SerializerId, serializerId)
+
+    TTLConfig.foreach {
+      case DynamoDBTTLConfig(fieldName, ttl) =>
+        val expiresAt = ttl.getItemExpiryTimeEpochSeconds(OffsetDateTime.now)
+        item.put(fieldName, N(expiresAt))
+    }
+
+    if (repr.manifest.nonEmpty) {
+      item.put(Manifest, S(repr.manifest))
+    }
+    if (manifest.nonEmpty) {
+      item.put(SerializerManifest, S(manifest))
+    }
+    item
+  }
+
+  private def serializePersistentRepr(reprPayload: AnyRef, serializer: Serializer) = {
+    serializer match {
+      case aS: AsyncSerializer =>
+        Serialization.withTransportInformation(context.system.asInstanceOf[ExtendedActorSystem]) { () =>
+          aS.toBinaryAsync(reprPayload)
+        }
+      case _ =>
+        Future {
+          ByteBuffer.wrap(serialization.serialize(reprPayload).get).array()
+        }
     }
   }
 

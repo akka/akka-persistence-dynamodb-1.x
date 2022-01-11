@@ -174,9 +174,6 @@ class DynamoDBJournal(config: Config)
     case SetDBHelperReporter(ref)        => dynamo.setReporter(ref)
   }
 
-  def keyLength(persistenceId: String, sequenceNr: Long): Int =
-    persistenceId.length + JournalName.length + KeyPayloadOverhead
-
   def messageKey(persistenceId: String, sequenceNr: Long): Item = {
     val item: Item = new JHMap
     item.put(Key, S(messagePartitionKey(persistenceId, sequenceNr)))

@@ -3,7 +3,13 @@
  */
 package akka.persistence.dynamodb.snapshot
 
-import akka.persistence.dynamodb.{ ClientConfig, DynamoDBClientConfig, DynamoDBConfig }
+import akka.persistence.dynamodb.{
+  ClientConfig,
+  DynamoDBClientConfig,
+  DynamoDBConfig,
+  DynamoDBTTLConfig,
+  DynamoDBTTLConfigReader
+}
 import com.typesafe.config.Config
 
 class DynamoDBSnapshotConfig(c: Config) extends DynamoDBConfig {
@@ -17,11 +23,14 @@ class DynamoDBSnapshotConfig(c: Config) extends DynamoDBConfig {
   val MaxBatchWrite = c.getInt("aws-api-limits.max-batch-write")
   val MaxItemSize   = c.getInt("aws-api-limits.max-item-size")
 
+  override val TTLConfig: Option[DynamoDBTTLConfig] = DynamoDBTTLConfigReader.readTTLConfig(c)
+
   override def toString: String =
     "DynamoDBJournalConfig(" +
     "SnapshotTable:" + Table +
     ",AwsKey:" + AwsKey +
-    ",Endpoint:" + Endpoint + ")"
+    ",Endpoint:" + Endpoint +
+    ",TTLConfig:" + TTLConfig.getOrElse("<undefined>") + ")"
 
   override val client: ClientConfig = new DynamoDBClientConfig(c)
 

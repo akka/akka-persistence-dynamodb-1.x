@@ -3,16 +3,15 @@
  */
 package akka.persistence.dynamodb
 
-import java.net.InetAddress
-
-import akka.persistence.dynamodb.journal.DynamoDBHelper
-import akka.serialization.Serialization
 import com.amazonaws.{ ClientConfiguration, Protocol }
 import com.typesafe.config.Config
+
+import java.net.InetAddress
 
 trait ClientConfig {
   val config: ClientConfiguration
 }
+
 trait DynamoDBConfig {
   val AwsKey: String
   val AwsSecret: String
@@ -25,7 +24,7 @@ trait DynamoDBConfig {
   val MaxItemSize: Int
   val Table: String
   val JournalName: String
-
+  val TTLConfig: Option[DynamoDBTTLConfig]
 }
 
 class DynamoDBClientConfig(c: Config) extends ClientConfig {

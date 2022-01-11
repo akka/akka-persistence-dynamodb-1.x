@@ -83,6 +83,80 @@ The table to create for snapshot storage has the schema:
 
 The Dynamodb item of a snapshot [can be 400 kB](http://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Limits.html#limits-items). Using a binary serialisation format like ProtoBuf or Kryo will use that space most effectively.
 
+
+DynamoDB Time To Live
+---------------------
+DynamoDB offers a Time to Live option to remove items after a delay. Once the date specified in the item passed today, the item is **eventually** removed from the table. 
+
+In DynamoDB, this feature can be activated in a per-table basis by specifying the name of the field containing the expiring date.  
+
+Expiring items is available for journal and snapshot tables. In order to activate it, `dynamodb-item-ttl-config.field-name` and `dynamodb-item-ttl-config.ttl` need to be specified. For example, given a system with a snapshot interval of 10 days. The TTLs could be configured:
+~~~
+// Journal
+my-dynamodb-journal { 
+  // ...
+  dynamodb-item-ttl-config {
+    field-name = "expiresAt" // https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/time-to-live-ttl-how-to.html
+    ttl = 30d
+  }
+  // ...
+}
+
+// Snapshot
+my-dynamodb-snapshot-store { 
+  // ...
+  dynamodb-item-ttl-config {
+    field-name = "expiresAt" // https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/time-to-live-ttl-how-to.html
+    ttl = 40d
+  }
+  // ...
+}
+~~~
+
+### To be aware if you are using TTL
+Before enabling the TTL feature, make sure to have an understanding of the potential impacts detailed below.
+
+#### Don't rely on the TTL for business logic related to the expiration
+As per specified in the [AWS DynamoDB configuration](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/howitworks-ttl.html),
+> Items that have expired, but haven’t yet been deleted by TTL, still appear in reads, queries, and scans. If you do not want expired items in the result set, you must filter them out.
+
+For the moment, the implementation of the TTL in this library does not filter items out on read from database. 
+
+Similarly,
+> TTL typically deletes expired items within 48 hours of expiration.
+
+As a consequence, you should not rely on this feature for business logic related to the expiration. The journal events and snapshots could still be returned after being expired but not yet deleted.
+
+#### Be careful about potential inconsistencies around the time of the expiring time
+This sections explains the relationship between snapshot TTL, journal TTL and snapshot interval.
+
+TLDR:
+- a different TTL need to be used for journal and snapshot. The snapshot TTL needs to be at least 48hrs lower than the journal TTL.
+- the snapshot interval needs to be much less than the snapshot TTL.
+
+
+In DynamoDB, the TTL is implemented by a per-partition background scan. This means that items are not actually deleted in global TTL order but only per-partition. Which may result in odd recover behavior. 
+
+Suppose the log (in insert time order) for a persistent entity is (E - event, S - snapshot):
+```
+E0, E1, E2, S0, E3, E4, S1.
+```
+As the Es may be on multiple partitions the TTL expire may result in:
+```
+E0, E2, S0, E3, E4, S1.
+```
+
+Note that `E1` was expired prior to `E0`. Which is entirely possible given the description from Amazon on how TTL is implemented.
+
+As a consequence, configuring the TTLs requires careful consideration. For an entity to be recovered from the persisted snapshot and journal events, the snapshot interval must be less than snapshot TTL. 
+
+Further, to ensure the useful property: The entity can be recovered by replaying the events since any persisted snapshot. The journal TTL should be larger than the snapshot TTL. At least by 48hrs. 
+
+Some concideration about the snapshot interval is also needed when defining the TTL. The bigger the interval between snapshots, the higher the difference between the TTL of the snapshot and the journal should be. In general, snapshot interval needs to be much less than snapshot TTL. If the snapshot interval is not small enough compared to the jounal TTL, some events could be lost. In other words, there need to be at least one snapshot before any journal item get expired and deleted.
+
+#### Only new items are going to get expired
+Once the TTL feature get enabled, **only** new inserted journal events and snapshot will be eventually removed. In case some event related to an entity are persisted before the feature being enabled, only new inserted events would eventually expire. That could lead to the same problem mentioned above could happen in that case as well. The entity recovered could be in an inconsistent state.
+
 Storage Semantics
 -----------------
 

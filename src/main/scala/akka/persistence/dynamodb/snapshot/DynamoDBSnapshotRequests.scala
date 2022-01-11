@@ -4,7 +4,6 @@
 package akka.persistence.dynamodb.snapshot
 
 import java.util.{ HashMap => JHMap }
-
 import akka.actor.ExtendedActorSystem
 import akka.persistence.dynamodb.{ DynamoDBRequests, Item }
 import akka.persistence.{ SelectedSnapshot, SnapshotMetadata, SnapshotSelectionCriteria }
@@ -15,6 +14,8 @@ import collection.JavaConverters._
 import scala.concurrent.Future
 import akka.persistence.dynamodb._
 import akka.serialization.{ AsyncSerializer, Serialization, Serializers }
+
+import java.time.OffsetDateTime
 
 trait DynamoDBSnapshotRequests extends DynamoDBRequests {
   this: DynamoDBSnapshotStore =>
@@ -163,6 +164,13 @@ trait DynamoDBSnapshotRequests extends DynamoDBRequests {
 
     fut.map { data =>
       item.put(PayloadData, B(data))
+
+      TTLConfig.foreach {
+        case DynamoDBTTLConfig(fieldName, ttl) =>
+          val expiresAt = ttl.getItemExpiryTimeEpochSeconds(OffsetDateTime.now)
+          item.put(fieldName, N(expiresAt))
+      }
+
       if (manifest.nonEmpty) {
         item.put(SerializerManifest, S(manifest))
       }
