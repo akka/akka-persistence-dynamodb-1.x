@@ -168,11 +168,10 @@ trait DynamoDBJournalRequests extends DynamoDBRequests {
   private def toMsgItem(repr: PersistentRepr): Future[Item] = {
     try {
       val reprPayload: AnyRef = repr.payload.asInstanceOf[AnyRef]
-      val serializer = serialization.serializerFor(reprPayload.getClass)
+      val serializer          = serialization.serializerFor(reprPayload.getClass)
 
       serializePersistentRepr(reprPayload, serializer).map { serialized =>
-
-        val eventData = B(serialized)
+        val eventData    = B(serialized)
         val serializerId = N(serializer.identifier)
 
         val manifest = Serializers.manifestFor(serializer, reprPayload)
@@ -189,7 +188,11 @@ trait DynamoDBJournalRequests extends DynamoDBRequests {
     }
   }
 
-  private def createItem(repr: PersistentRepr, eventData: AttributeValue, serializerId: AttributeValue, manifest: String) = {
+  private def createItem(
+      repr: PersistentRepr,
+      eventData: AttributeValue,
+      serializerId: AttributeValue,
+      manifest: String) = {
     val item: Item = messageKey(repr.persistenceId, repr.sequenceNr)
 
     item.put(PersistentId, S(repr.persistenceId))
@@ -216,13 +219,13 @@ trait DynamoDBJournalRequests extends DynamoDBRequests {
   private def serializePersistentRepr(reprPayload: AnyRef, serializer: Serializer) = {
     serializer match {
       case aS: AsyncSerializer =>
-          Serialization.withTransportInformation(context.system.asInstanceOf[ExtendedActorSystem]) { () =>
-            aS.toBinaryAsync(reprPayload)
-          }
-        case _ =>
-          Future {
-            ByteBuffer.wrap(serialization.serialize(reprPayload).get).array()
-          }
+        Serialization.withTransportInformation(context.system.asInstanceOf[ExtendedActorSystem]) { () =>
+          aS.toBinaryAsync(reprPayload)
+        }
+      case _ =>
+        Future {
+          ByteBuffer.wrap(serialization.serialize(reprPayload).get).array()
+        }
     }
   }
 

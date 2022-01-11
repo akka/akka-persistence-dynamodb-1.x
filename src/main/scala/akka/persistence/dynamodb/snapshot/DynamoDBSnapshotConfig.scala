@@ -3,7 +3,13 @@
  */
 package akka.persistence.dynamodb.snapshot
 
-import akka.persistence.dynamodb.{ ClientConfig, DynamoDBClientConfig, DynamoDBConfig, DynamoDBTTLConfig, DynamoDBTTLConfigReader }
+import akka.persistence.dynamodb.{
+  ClientConfig,
+  DynamoDBClientConfig,
+  DynamoDBConfig,
+  DynamoDBTTLConfig,
+  DynamoDBTTLConfigReader
+}
 import com.typesafe.config.Config
 
 class DynamoDBSnapshotConfig(c: Config) extends DynamoDBConfig {

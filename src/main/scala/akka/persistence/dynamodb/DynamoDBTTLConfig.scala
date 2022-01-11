@@ -28,16 +28,14 @@ object DynamoDBTTL {
 object DynamoDBTTLConfigReader {
 
   val configFieldName: String = "dynamodb-item-ttl-config.field-name"
-  val configTtlName: String = "dynamodb-item-ttl-config.ttl"
+  val configTtlName: String   = "dynamodb-item-ttl-config.ttl"
 
   def readTTLConfig(c: Config): Option[DynamoDBTTLConfig] = {
     for {
-      fieldName <- Try(c getString configFieldName).toOption.map(_.trim)
+      fieldName <- Try(c.getString(configFieldName)).toOption.map(_.trim)
       if fieldName.nonEmpty
-      ttl <- Try(c getDuration configTtlName).toOption
-    } yield DynamoDBTTLConfig(
-      fieldName = fieldName,
-      ttl       = DynamoDBTTL.fromJavaDuration(ttl))
+      ttl <- Try(c.getDuration(configTtlName)).toOption
+    } yield DynamoDBTTLConfig(fieldName = fieldName, ttl = DynamoDBTTL.fromJavaDuration(ttl))
   }
 
 }
