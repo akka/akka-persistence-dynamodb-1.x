@@ -9,6 +9,7 @@ import akka.persistence._
 import akka.testkit._
 import com.typesafe.config.ConfigFactory
 import org.scalatest._
+import akka.persistence.dynamodb.IntegSpec
 
 /**
  * This class is pulled from https://github.com/krasserm/akka-persistence-cassandra/
@@ -16,16 +17,20 @@ import org.scalatest._
  */
 object DynamoDBIntegrationLoadSpec {
 
-  val config = ConfigFactory.parseString("""
+  val config = ConfigFactory
+    .parseString("""
 my-dynamodb-journal {
   journal-table = "integrationLoadSpec"
+  endpoint =  "http://localhost:8888"
   endpoint = ${?AWS_DYNAMODB_ENDPOINT}
   aws-access-key-id = "set something in case no real creds are there"
   aws-access-key-id = ${?AWS_ACCESS_KEY_ID}
   aws-secret-access-key = "set something in case no real creds are there"
   aws-secret-access-key = ${?AWS_SECRET_ACCESS_KEY}
 }
-""").resolve.withFallback(ConfigFactory.load())
+akka.persistence.snapshot-store.plugin = ""
+""").withFallback(ConfigFactory.load())
+    .resolve()
 
   case class DeleteTo(snr: Long)
 
@@ -116,7 +121,8 @@ class DynamoDBIntegrationLoadSpec
     with WordSpecLike
     with Matchers
     with BeforeAndAfterAll
-    with DynamoDBUtils {
+    with DynamoDBUtils
+    with IntegSpec {
 
   override def beforeAll(): Unit = {
     super.beforeAll()
@@ -126,6 +132,7 @@ class DynamoDBIntegrationLoadSpec
   override def afterAll(): Unit = {
     client.shutdown()
     system.terminate()
+    super.afterAll()
   }
 
   def subscribeToRangeDeletion(probe: TestProbe): Unit =
@@ -139,7 +146,7 @@ class DynamoDBIntegrationLoadSpec
     subscribeToRangeDeletion(deleteProbe)
 
     val processor1 = system.actorOf(Props(classOf[ProcessorA], persistenceId, self))
-    1L to 16L foreach { i =>
+    (1L to 16L).foreach { i =>
       processor1 ! s"a-${i}"
       expectMsgAllOf(s"a-${i}", i, false)
     }
@@ -148,7 +155,7 @@ class DynamoDBIntegrationLoadSpec
     awaitRangeDeletion(deleteProbe)
 
     system.actorOf(Props(classOf[ProcessorA], persistenceId, self))
-    4L to 16L foreach { i =>
+    (4L to 16L).foreach { i =>
       expectMsgAllOf(s"a-${i}", i, true)
     }
 
@@ -156,7 +163,7 @@ class DynamoDBIntegrationLoadSpec
     awaitRangeDeletion(deleteProbe)
 
     system.actorOf(Props(classOf[ProcessorA], persistenceId, self))
-    8L to 16L foreach { i =>
+    (8L to 16L).foreach { i =>
       expectMsgAllOf(s"a-${i}", i, true)
     }
   }
@@ -165,14 +172,14 @@ class DynamoDBIntegrationLoadSpec
 
     "write and replay messages" in {
       val persistenceId = UUID.randomUUID().toString
-      val processor1 = system.actorOf(Props(classOf[ProcessorA], persistenceId, self), "p1")
-      1L to 16L foreach { i =>
+      val processor1    = system.actorOf(Props(classOf[ProcessorA], persistenceId, self), "p1")
+      (1L to 16L).foreach { i =>
         processor1 ! s"a-${i}"
         expectMsgAllOf(s"a-${i}", i, false)
       }
 
       val processor2 = system.actorOf(Props(classOf[ProcessorA], persistenceId, self), "p2")
-      1L to 16L foreach { i =>
+      (1L to 16L).foreach { i =>
         expectMsgAllOf(s"a-${i}", i, true)
       }
 
@@ -210,72 +217,72 @@ class DynamoDBIntegrationLoadSpec
       probe.expectNoMsg(200.millis)
     } */
     "write and replay with persistAll greater than partition size skipping whole partition" in {
-      val persistenceId = UUID.randomUUID().toString
-      val probe = TestProbe()
+      val persistenceId   = UUID.randomUUID().toString
+      val probe           = TestProbe()
       val processorAtomic = system.actorOf(Props(classOf[ProcessorAtomic], persistenceId, self))
 
       processorAtomic ! List("a-1", "a-2", "a-3", "a-4", "a-5", "a-6")
-      1L to 6L foreach { i =>
+      (1L to 6L).foreach { i =>
         expectMsgAllOf(s"a-${i}", i, false)
       }
 
-      val testProbe = TestProbe()
+      val testProbe  = TestProbe()
       val processor2 = system.actorOf(Props(classOf[ProcessorAtomic], persistenceId, testProbe.ref))
-      1L to 6L foreach { i =>
+      (1L to 6L).foreach { i =>
         testProbe.expectMsgAllOf(s"a-${i}", i, true)
       }
     }
     "write and replay with persistAll greater than partition size skipping part of a partition" in {
-      val persistenceId = UUID.randomUUID().toString
-      val probe = TestProbe()
+      val persistenceId   = UUID.randomUUID().toString
+      val probe           = TestProbe()
       val processorAtomic = system.actorOf(Props(classOf[ProcessorAtomic], persistenceId, self))
 
       processorAtomic ! List("a-1", "a-2", "a-3")
-      1L to 3L foreach { i =>
+      (1L to 3L).foreach { i =>
         expectMsgAllOf(s"a-${i}", i, false)
       }
 
       processorAtomic ! List("a-4", "a-5", "a-6")
-      4L to 6L foreach { i =>
+      (4L to 6L).foreach { i =>
         expectMsgAllOf(s"a-${i}", i, false)
       }
 
-      val testProbe = TestProbe()
+      val testProbe  = TestProbe()
       val processor2 = system.actorOf(Props(classOf[ProcessorAtomic], persistenceId, testProbe.ref))
-      1L to 6L foreach { i =>
+      (1L to 6L).foreach { i =>
         testProbe.expectMsgAllOf(s"a-${i}", i, true)
       }
     }
     "write and replay with persistAll less than partition size" in {
-      val persistenceId = UUID.randomUUID().toString
-      val probe = TestProbe()
+      val persistenceId   = UUID.randomUUID().toString
+      val probe           = TestProbe()
       val processorAtomic = system.actorOf(Props(classOf[ProcessorAtomic], persistenceId, self))
 
       processorAtomic ! List("a-1", "a-2", "a-3", "a-4")
-      1L to 4L foreach { i =>
+      (1L to 4L).foreach { i =>
         expectMsgAllOf(s"a-${i}", i, false)
       }
 
       val processor2 = system.actorOf(Props(classOf[ProcessorAtomic], persistenceId, self))
-      1L to 4L foreach { i =>
+      (1L to 4L).foreach { i =>
         expectMsgAllOf(s"a-${i}", i, true)
       }
     }
     "not replay messages deleted from the +1 partition" in {
       val persistenceId = UUID.randomUUID().toString
-      val probe = TestProbe()
-      val deleteProbe = TestProbe()
+      val probe         = TestProbe()
+      val deleteProbe   = TestProbe()
       subscribeToRangeDeletion(deleteProbe)
       val processorAtomic = system.actorOf(Props(classOf[ProcessorAtomic], persistenceId, self))
 
-      List("a-1", "a-2", "a-3", "a-4", "a-5", "a-6") foreach (processorAtomic ! List(_))
-      1L to 6L foreach { i =>
+      List("a-1", "a-2", "a-3", "a-4", "a-5", "a-6").foreach(processorAtomic ! List(_))
+      (1L to 6L).foreach { i =>
         expectMsgAllOf(s"a-${i}", i, false)
       }
       processorAtomic ! DeleteTo(5L)
       awaitRangeDeletion(deleteProbe)
 
-      val testProbe = TestProbe()
+      val testProbe  = TestProbe()
       val processor2 = system.actorOf(Props(classOf[ProcessorAtomic], persistenceId, testProbe.ref))
       testProbe.expectMsgAllOf(s"a-6", 6, true)
     }

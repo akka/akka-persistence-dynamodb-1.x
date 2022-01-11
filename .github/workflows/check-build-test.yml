@@ -1,0 +1,81 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+      - main
+      - release-*
+      - 1.1.x
+    tags-ignore: [ v.* ]
+
+env:
+  AKKA_TEST_TIMEFACTOR: 10.0
+  EVENT_NAME: ${{ github.event_name }}
+
+jobs:
+  check-code-compilation:
+    name: Check Code Compilation
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Checkout GitHub merge
+        if: github.event.pull_request
+        run: |-
+          git fetch origin pull/${{ github.event.pull_request.number }}/merge:scratch
+          git checkout scratch
+
+      - name: Set up JDK 11
+        uses: olafurpg/setup-scala@v10
+        with:
+          java-version: adopt@1.11.0-9
+
+      - name: Cache Coursier cache
+        uses: coursier/cache-action@v5
+
+      - name: Compile all code with default compiler
+        run: sbt Test/compile
+
+  test:
+    name: Build and Test
+    runs-on: ubuntu-20.04
+    needs: [check-code-compilation]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { java-version: adopt@1.8,      scala-version: 2.12.13, sbt-opts: '' }
+          - { java-version: adopt@1.8,      scala-version: 2.13.5, sbt-opts: '' }
+          - { java-version: adopt@1.11.0-9, scala-version: 2.12.13,  sbt-opts: '-J-XX:+UnlockExperimentalVMOptions -J-XX:+UseJVMCICompiler' }
+          - { java-version: adopt@1.11.0-9, scala-version: 2.13.5, sbt-opts: '-J-XX:+UnlockExperimentalVMOptions -J-XX:+UseJVMCICompiler' }
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Checkout GitHub merge
+        if: github.event.pull_request
+        run: |-
+          git fetch origin pull/${{ github.event.pull_request.number }}/merge:scratch
+          git checkout scratch
+
+      - name: Setup Scala with Java ${{ matrix.java-version }}
+        uses: olafurpg/setup-scala@v10
+        with:
+          java-version: ${{ matrix.java-version }}
+
+      - name: Cache Coursier cache
+        uses: coursier/cache-action@v5
+
+      - name: Run tests with Scala ${{ matrix.scala-version }} and Java ${{ matrix.java-version }}
+        run: sbt "++${{ matrix.scala-version }} test" ${{ matrix.sbt-opts }}
+
+      - name: Print logs on failure
+        if: ${{ failure() }}
+        run: find . -name "*.log" -exec ./scripts/cat-log.sh {} \;

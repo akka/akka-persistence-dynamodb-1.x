@@ -18,14 +18,14 @@ import scala.concurrent.{ ExecutionContext, Future, Promise }
 import scala.util.{ Failure, Success, Try }
 
 package object dynamodb {
-  type Item = JMap[String, AttributeValue]
+  type Item        = JMap[String, AttributeValue]
   type ItemUpdates = JMap[String, AttributeValueUpdate]
 
   def S(value: String): AttributeValue = new AttributeValue().withS(value)
 
-  def N(value: Long): AttributeValue = new AttributeValue().withN(value.toString)
+  def N(value: Long): AttributeValue   = new AttributeValue().withN(value.toString)
   def N(value: String): AttributeValue = new AttributeValue().withN(value)
-  val Naught = N(0)
+  val Naught                           = N(0)
 
   def B(value: Array[Byte]): AttributeValue = new AttributeValue().withB(ByteBuffer.wrap(value))
 
@@ -45,8 +45,8 @@ package object dynamodb {
   }
 
   def trySequence[A, M[X] <: TraversableOnce[X]](in: M[Future[A]])(implicit
-    cbf: CanBuildFrom[M[Future[A]], Try[A], M[Try[A]]],
-                                                                   executor: ExecutionContext): Future[M[Try[A]]] =
+      cbf: CanBuildFrom[M[Future[A]], Try[A], M[Try[A]]],
+      executor: ExecutionContext): Future[M[Try[A]]] =
     in.foldLeft(Future.successful(cbf(in))) { (fr, a) =>
       val fb = lift(a)
       for (r <- fr; b <- fb) yield (r += b)
@@ -55,9 +55,9 @@ package object dynamodb {
   def dynamoClient(system: ActorSystem, settings: DynamoDBConfig): DynamoDBHelper = {
     val client =
       if (settings.AwsKey.nonEmpty && settings.AwsSecret.nonEmpty) {
-        val conns = settings.client.config.getMaxConnections
+        val conns    = settings.client.config.getMaxConnections
         val executor = Executors.newFixedThreadPool(conns)
-        val creds = new BasicAWSCredentials(settings.AwsKey, settings.AwsSecret)
+        val creds    = new BasicAWSCredentials(settings.AwsKey, settings.AwsSecret)
         new AmazonDynamoDBAsyncClient(creds, settings.client.config, executor)
       } else {
         new AmazonDynamoDBAsyncClient(settings.client.config)
@@ -66,11 +66,12 @@ package object dynamodb {
     val dispatcher = system.dispatchers.lookup(settings.ClientDispatcher)
 
     class DynamoDBClient(
-      override val ec:        ExecutionContext,
-      override val dynamoDB:  AmazonDynamoDBAsyncClient,
-      override val settings:  DynamoDBConfig,
-      override val scheduler: Scheduler,
-      override val log:       LoggingAdapter) extends DynamoDBHelper
+        override val ec: ExecutionContext,
+        override val dynamoDB: AmazonDynamoDBAsyncClient,
+        override val settings: DynamoDBConfig,
+        override val scheduler: Scheduler,
+        override val log: LoggingAdapter)
+        extends DynamoDBHelper
 
     new DynamoDBClient(dispatcher, client, settings, system.scheduler, Logging(system, "DynamoDBClient"))
   }

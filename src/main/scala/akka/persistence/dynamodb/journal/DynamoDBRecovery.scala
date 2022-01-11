@@ -29,10 +29,8 @@ import akka.util.ByteString
 object DynamoDBRecovery {
   case class ReplayBatch(items: Seq[Item], map: Map[AttributeValue, Long]) {
     def sorted: immutable.Iterable[Item] =
-      items.foldLeft(immutable.TreeMap.empty[Long, Item])((acc, i) =>
-        acc.updated(itemToSeq(i), i))
-        .map(_._2)
-    def ids: Seq[Long] = items.map(itemToSeq).sorted
+      items.foldLeft(immutable.TreeMap.empty[Long, Item])((acc, i) => acc.updated(itemToSeq(i), i)).map(_._2)
+    def ids: Seq[Long]                   = items.map(itemToSeq).sorted
     private def itemToSeq(i: Item): Long = map(i.get(Key)) * 100 + i.get(Sort).getN.toInt
   }
 }
@@ -40,72 +38,73 @@ object DynamoDBRecovery {
 object RemoveIncompleteAtoms extends GraphStage[FlowShape[Item, List[Item]]] {
   private final val NoBatch = -1L
 
-  val in = Inlet[Item]("RIA.in")
+  val in  = Inlet[Item]("RIA.in")
   val out = Outlet[List[Item]]("RIA.out")
 
-  override val shape = FlowShape(in, out)
+  override val shape             = FlowShape(in, out)
   override val initialAttributes = Attributes.name("RemoveIncompleteAtoms")
 
-  override def createLogic(attr: Attributes) = new GraphStageLogic(shape) with InHandler with OutHandler {
-    var batchEnd = NoBatch
-    var batch = List.empty[Item]
+  override def createLogic(attr: Attributes) =
+    new GraphStageLogic(shape) with InHandler with OutHandler {
+      var batchEnd = NoBatch
+      var batch    = List.empty[Item]
 
-    setHandler(out, this)
-    setHandler(in, this)
+      setHandler(out, this)
+      setHandler(in, this)
 
-    override def onPull(): Unit = pull(in)
+      override def onPull(): Unit = pull(in)
 
-    override def onPush(): Unit = {
-      val item = grab(in)
-      if (item.containsKey(AtomEnd)) {
-        val end = item.get(AtomEnd).getN.toLong
-        val index = item.get(AtomIndex).getN.toLong
-        val seqNr = sn(item)
-        val myBatchEnd = seqNr - index + end
-        if (seqNr == batchEnd) {
-          val result =
-            if (myBatchEnd == batchEnd) {
-              val r = (item :: batch).reverse
-              batch = Nil
-              batchEnd = NoBatch
-              r
-            } else {
-              // foul play detected, scrap this batch
-              batch = item :: Nil
-              batchEnd = myBatchEnd
-              Nil
-            }
-          if (result.size == (end + 1)) push(out, result)
-          else pull(in)
-        } else if (batchEnd == NoBatch || seqNr > batchEnd) {
-          batchEnd = myBatchEnd
-          batch = item :: Nil
-          pull(in)
-        } else {
-          if (batchEnd == myBatchEnd) batch ::= item
-          else {
+      override def onPush(): Unit = {
+        val item = grab(in)
+        if (item.containsKey(AtomEnd)) {
+          val end        = item.get(AtomEnd).getN.toLong
+          val index      = item.get(AtomIndex).getN.toLong
+          val seqNr      = sn(item)
+          val myBatchEnd = seqNr - index + end
+          if (seqNr == batchEnd) {
+            val result =
+              if (myBatchEnd == batchEnd) {
+                val r = (item :: batch).reverse
+                batch = Nil
+                batchEnd = NoBatch
+                r
+              } else {
+                // foul play detected, scrap this batch
+                batch = item :: Nil
+                batchEnd = myBatchEnd
+                Nil
+              }
+            if (result.size == (end + 1)) push(out, result)
+            else pull(in)
+          } else if (batchEnd == NoBatch || seqNr > batchEnd) {
             batchEnd = myBatchEnd
             batch = item :: Nil
+            pull(in)
+          } else {
+            if (batchEnd == myBatchEnd) batch ::= item
+            else {
+              batchEnd = myBatchEnd
+              batch = item :: Nil
+            }
+            pull(in)
           }
-          pull(in)
+        } else {
+          push(out, item :: Nil)
+          // throw away possible incomplete batch
+          batchEnd = NoBatch
+          batch = Nil
         }
-      } else {
-        push(out, item :: Nil)
-        // throw away possible incomplete batch
-        batchEnd = NoBatch
-        batch = Nil
       }
-    }
 
-    private def sn(item: Item): Long = {
-      val s = item.get(Key).getS
-      val n = item.get(Sort).getN.toLong
-      val pos = s.lastIndexOf('-')
-      require(pos != -1, "unknown key format " + s)
-      s.substring(pos + 1).toLong * 100 + n
-    }
+      private def sn(item: Item): Long = {
+        val s   = item.get(Key).getS
+        val n   = item.get(Sort).getN.toLong
+        val pos = s.lastIndexOf('-')
+        require(pos != -1, "unknown key format " + s)
+        s.substring(pos + 1).toLong * 100 + n
+      }
 
-  }
+    }
 }
 
 trait DynamoDBRecovery extends AsyncRecovery { this: DynamoDBJournal =>
@@ -114,11 +113,8 @@ trait DynamoDBRecovery extends AsyncRecovery { this: DynamoDBJournal =>
 
   implicit lazy val replayDispatcher = context.system.dispatchers.lookup(ReplayDispatcher)
 
-  override def asyncReplayMessages(
-    persistenceId:  String,
-    fromSequenceNr: Long,
-    toSequenceNr:   Long,
-    max:            Long)(replayCallback: (PersistentRepr) => Unit): Future[Unit] =
+  override def asyncReplayMessages(persistenceId: String, fromSequenceNr: Long, toSequenceNr: Long, max: Long)(
+      replayCallback: (PersistentRepr) => Unit): Future[Unit] =
     logFailure(s"replay for $persistenceId ($fromSequenceNr to $toSequenceNr)") {
       log.debug("starting replay for {} from {} to {} (max {})", persistenceId, fromSequenceNr, toSequenceNr, max)
       // toSequenceNr is already capped to highest and guaranteed to be no less than fromSequenceNr
@@ -143,18 +139,30 @@ trait DynamoDBRecovery extends AsyncRecovery { this: DynamoDBJournal =>
     val keyAttr = new KeysAndAttributes()
       .withKeys(batchKeys.map(_._1).asJava)
       .withConsistentRead(true)
-      .withAttributesToGet(Key, Sort, PersistentId, SequenceNr, Payload, Event, Manifest, SerializerId, SerializerManifest, WriterUuid, AtomEnd, AtomIndex)
+      .withAttributesToGet(
+        Key,
+        Sort,
+        PersistentId,
+        SequenceNr,
+        Payload,
+        Event,
+        Manifest,
+        SerializerId,
+        SerializerManifest,
+        WriterUuid,
+        AtomEnd,
+        AtomIndex)
     val get = batchGetReq(Collections.singletonMap(JournalTable, keyAttr))
-    dynamo.batchGetItem(get).flatMap(getUnprocessedItems(_)).map {
-      result =>
-        ReplayBatch(
-          result.getResponses.get(JournalTable).asScala.toSeq,
-          batchKeys.iterator.map(p => p._1.get(Key) -> p._2).toMap)
+    dynamo.batchGetItem(get).flatMap(getUnprocessedItems(_)).map { result =>
+      ReplayBatch(
+        result.getResponses.get(JournalTable).asScala.toSeq,
+        batchKeys.iterator.map(p => p._1.get(Key) -> p._2).toMap)
     }
   }
 
   def listAllSeqNr(persistenceId: String): Future[Seq[Long]] =
-    Source.fromIterator { () => Iterator.iterate(0L)(_ + 1) }
+    Source
+      .fromIterator { () => Iterator.iterate(0L)(_ + 1) }
       .grouped(MaxBatchGet)
       .mapAsync(ReplayParallelism)(batch => getReplayBatch(persistenceId, batch).map(_.ids))
       .takeWhile(_.nonEmpty)
@@ -162,8 +170,9 @@ trait DynamoDBRecovery extends AsyncRecovery { this: DynamoDBJournal =>
 
   def readSequenceNr(persistenceId: String, highest: Boolean): Future[Long] = {
     if (Tracing) log.debug("readSequenceNr(highest={}, persistenceId={})", highest, persistenceId)
-    val keyGroups = readSequenceNrBatches(persistenceId, highest)
-      .map(_.map(getMaxSeqNr).recover { case ex: Throwable => -1L })
+    val keyGroups = readSequenceNrBatches(persistenceId, highest).map(_.map(getMaxSeqNr).recover {
+      case ex: Throwable => -1L
+    })
     Future.sequence(keyGroups).flatMap { seq =>
       seq.max match {
         case -1L =>
@@ -177,29 +186,27 @@ trait DynamoDBRecovery extends AsyncRecovery { this: DynamoDBJournal =>
              * must scan the partition of this Sort=0 entry and find the highest occupied number.
              */
             val request = eventQuery(persistenceId, start)
-            dynamo.query(request)
-              .flatMap(getRemainingQueryItems(request, _))
-              .flatMap { result =>
-                if (result.getItems.isEmpty) {
-                  /*
-                   * If this comes back empty then that means that all events have been deleted. The only
-                   * reliable way to obtain the previously highest number is to also read the lowest number
-                   * (which is always stored in full), knowing that it will be either highest-1 or zero.
-                   */
-                  readSequenceNr(persistenceId, highest = false).map { lowest =>
-                    val ret = Math.max(start, lowest - 1)
-                    log.debug("readSequenceNr(highest=true persistenceId={}) = {}", persistenceId, ret)
-                    ret
-                  }
-                } else {
-                  /*
-                   * `start` is the Sort=0 entry’s sequence number, so add the maximum sort key.
-                   */
-                  val ret = start + result.getItems.asScala.map(_.get(Sort).getN.toLong).max
+            dynamo.query(request).flatMap(getRemainingQueryItems(request, _)).flatMap { result =>
+              if (result.getItems.isEmpty) {
+                /*
+                 * If this comes back empty then that means that all events have been deleted. The only
+                 * reliable way to obtain the previously highest number is to also read the lowest number
+                 * (which is always stored in full), knowing that it will be either highest-1 or zero.
+                 */
+                readSequenceNr(persistenceId, highest = false).map { lowest =>
+                  val ret = Math.max(start, lowest - 1)
                   log.debug("readSequenceNr(highest=true persistenceId={}) = {}", persistenceId, ret)
-                  Future.successful(ret)
+                  ret
                 }
+              } else {
+                /*
+                 * `start` is the Sort=0 entry’s sequence number, so add the maximum sort key.
+                 */
+                val ret = start + result.getItems.asScala.map(_.get(Sort).getN.toLong).max
+                log.debug("readSequenceNr(highest=true persistenceId={}) = {}", persistenceId, ret)
+                Future.successful(ret)
               }
+            }
           } else {
             log.debug("readSequenceNr(highest=false persistenceId={}) = {}", persistenceId, start)
             Future.successful(start)
@@ -209,18 +216,18 @@ trait DynamoDBRecovery extends AsyncRecovery { this: DynamoDBJournal =>
   }
 
   def readAllSequenceNr(persistenceId: String, highest: Boolean): Future[Set[Long]] =
-    Future.sequence(
-      readSequenceNrBatches(persistenceId, highest)
-        .map(_.map(getAllSeqNr).recover { case ex: Throwable => Nil }))
+    Future
+      .sequence(readSequenceNrBatches(persistenceId, highest).map(_.map(getAllSeqNr).recover {
+        case ex: Throwable => Nil
+      }))
       .map(_.flatten.toSet)
 
   def readSequenceNrBatches(persistenceId: String, highest: Boolean): Iterator[Future[BatchGetItemResult]] =
-    (0 until SequenceShards)
-      .iterator
+    (0 until SequenceShards).iterator
       .map(l => if (highest) highSeqKey(persistenceId, l) else lowSeqKey(persistenceId, l))
       .grouped(MaxBatchGet)
       .map { keys =>
-        val ka = new KeysAndAttributes().withKeys(keys.asJava).withConsistentRead(true)
+        val ka  = new KeysAndAttributes().withKeys(keys.asJava).withConsistentRead(true)
         val get = batchGetReq(Collections.singletonMap(JournalTable, ka))
         dynamo.batchGetItem(get).flatMap(getUnprocessedItems(_))
       }
@@ -229,15 +236,17 @@ trait DynamoDBRecovery extends AsyncRecovery { this: DynamoDBJournal =>
     if (resp.getResponses.isEmpty) 0L
     else {
       var ret = 0L
-      resp.getResponses.get(JournalTable).forEach(new Consumer[Item] {
-        override def accept(item: Item): Unit = {
-          val seq = item.get(SequenceNr) match {
-            case null => 0L
-            case attr => attr.getN.toLong
+      resp.getResponses
+        .get(JournalTable)
+        .forEach(new Consumer[Item] {
+          override def accept(item: Item): Unit = {
+            val seq = item.get(SequenceNr) match {
+              case null => 0L
+              case attr => attr.getN.toLong
+            }
+            if (seq > ret) ret = seq
           }
-          if (seq > ret) ret = seq
-        }
-      })
+        })
       ret
     }
 
@@ -245,14 +254,16 @@ trait DynamoDBRecovery extends AsyncRecovery { this: DynamoDBJournal =>
     if (resp.getResponses.isEmpty()) Nil
     else {
       var ret: List[Long] = Nil
-      resp.getResponses.get(JournalTable).forEach(new Consumer[Item] {
-        override def accept(item: Item): Unit = {
-          item.get(SequenceNr) match {
-            case null =>
-            case attr => ret ::= attr.getN.toLong
+      resp.getResponses
+        .get(JournalTable)
+        .forEach(new Consumer[Item] {
+          override def accept(item: Item): Unit = {
+            item.get(SequenceNr) match {
+              case null =>
+              case attr => ret ::= attr.getN.toLong
+            }
           }
-        }
-      })
+        })
       ret
     }
 
@@ -266,13 +277,13 @@ trait DynamoDBRecovery extends AsyncRecovery { this: DynamoDBJournal =>
     if (item.containsKey(Event)) {
       val serializerManifest = getValueOrEmptyString(item, SerializerManifest)
 
-      val pI = item.get(PersistentId).getS
-      val sN = item.get(SequenceNr).getN.toLong
-      val wU = item.get(WriterUuid).getS
+      val pI           = item.get(PersistentId).getS
+      val sN           = item.get(SequenceNr).getN.toLong
+      val wU           = item.get(WriterUuid).getS
       val reprManifest = getValueOrEmptyString(item, Manifest)
 
       val eventPayload = item.get(Event).getB
-      val serId = item.get(SerializerId).getN.toInt
+      val serId        = item.get(SerializerId).getN.toInt
 
       val fut = serialization.serializerByIdentity.get(serId) match {
         case Some(asyncSerializer: AsyncSerializer) =>
@@ -292,11 +303,11 @@ trait DynamoDBRecovery extends AsyncRecovery { this: DynamoDBJournal =>
       fut.map { event: AnyRef =>
         PersistentRepr(
           event,
-          sequenceNr    = sN,
+          sequenceNr = sN,
           persistenceId = pI,
-          manifest      = reprManifest,
-          writerUuid    = wU,
-          sender        = null)
+          manifest = reprManifest,
+          writerUuid = wU,
+          sender = null)
       }
 
     } else {
@@ -320,18 +331,23 @@ trait DynamoDBRecovery extends AsyncRecovery { this: DynamoDBJournal =>
     }
     if (unprocessed == 0) Future.successful(result)
     else if (retriesRemaining == 0) {
-      Future.failed(new DynamoDBJournalFailure(s"unable to batch get ${result.getUnprocessedKeys.get(JournalTable).getKeys} after 10 tries"))
+      Future.failed(
+        new DynamoDBJournalFailure(
+          s"unable to batch get ${result.getUnprocessedKeys.get(JournalTable).getKeys} after 10 tries"))
     } else {
       val rest = batchGetReq(result.getUnprocessedKeys)
-      dynamo.batchGetItem(rest).map { rr =>
-        val items = rr.getResponses.get(JournalTable)
-        val responses = result.getResponses.get(JournalTable)
-        items.forEach(new Consumer[Item] {
-          override def accept(item: Item): Unit = responses.add(item)
-        })
-        result.setUnprocessedKeys(rr.getUnprocessedKeys)
-        result
-      }.flatMap(getUnprocessedItems(_, retriesRemaining - 1))
+      dynamo
+        .batchGetItem(rest)
+        .map { rr =>
+          val items     = rr.getResponses.get(JournalTable)
+          val responses = result.getResponses.get(JournalTable)
+          items.forEach(new Consumer[Item] {
+            override def accept(item: Item): Unit = responses.add(item)
+          })
+          result.setUnprocessedKeys(rr.getUnprocessedKeys)
+          result
+        }
+        .flatMap(getUnprocessedItems(_, retriesRemaining - 1))
     }
   }
 
@@ -352,12 +368,11 @@ trait DynamoDBRecovery extends AsyncRecovery { this: DynamoDBJournal =>
     new QueryRequest()
       .withTableName(JournalTable)
       .withKeyConditionExpression(Key + " = :kkey")
-      .withExpressionAttributeValues(Collections.singletonMap(":kkey", S(messagePartitionKey(persistenceId, sequenceNr))))
+      .withExpressionAttributeValues(
+        Collections.singletonMap(":kkey", S(messagePartitionKey(persistenceId, sequenceNr))))
       .withProjectionExpression("num")
       .withConsistentRead(true)
 
   def batchGetReq(items: JMap[String, KeysAndAttributes]) =
-    new BatchGetItemRequest()
-      .withRequestItems(items)
-      .withReturnConsumedCapacity(ReturnConsumedCapacity.TOTAL)
+    new BatchGetItemRequest().withRequestItems(items).withReturnConsumedCapacity(ReturnConsumedCapacity.TOTAL)
 }

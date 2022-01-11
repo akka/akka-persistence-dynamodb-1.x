@@ -28,8 +28,7 @@ trait DynamoDBConfig {
 }
 
 class DynamoDBClientConfig(c: Config) extends ClientConfig {
-  private val cc = c getConfig "aws-client-config"
-
+  private val cc = c.getConfig("aws-client-config")
   private def get[T](path: String, extract: (Config, String) => T, set: T => Unit): Unit =
     if (cc.getString(path) == "default") ()
     else {
@@ -38,9 +37,9 @@ class DynamoDBClientConfig(c: Config) extends ClientConfig {
       foundSettings ::= s"$path:$value"
     }
 
-  private var foundSettings = List.empty[String]
+  private var foundSettings          = List.empty[String]
   override lazy val toString: String = foundSettings.reverse.mkString("{", ",", "}")
-  val config = new ClientConfiguration
+  val config                         = new ClientConfiguration
 
   get("client-execution-timeout", _.getInt(_), config.setClientExecutionTimeout)
   get("connection-max-idle-millis", _.getLong(_), config.setConnectionMaxIdleMillis)
@@ -60,11 +59,14 @@ class DynamoDBClientConfig(c: Config) extends ClientConfig {
   get("request-timeout", _.getInt(_), config.setRequestTimeout)
   get("response-metadata-cache-size", _.getInt(_), config.setResponseMetadataCacheSize)
   get("signer-override", _.getString(_), config.setSignerOverride)
-  get[(Int, Int)]("socket-buffer-size-hints", (c, p) => {
-    val tuple = c.getIntList(p)
-    require(tuple.size == 2, "socket-buffer-size-hints must be a list of two integers")
-    (tuple.get(0), tuple.get(1))
-  }, pair => config.setSocketBufferSizeHints(pair._1, pair._2))
+  get[(Int, Int)](
+    "socket-buffer-size-hints",
+    (c, p) => {
+      val tuple = c.getIntList(p)
+      require(tuple.size == 2, "socket-buffer-size-hints must be a list of two integers")
+      (tuple.get(0), tuple.get(1))
+    },
+    pair => config.setSocketBufferSizeHints(pair._1, pair._2))
   get("socket-timeout", _.getInt(_), config.setSocketTimeout)
   get("use-expect-continue", _.getBoolean(_), config.setUseExpectContinue)
   get("use-gzip", _.getBoolean(_), config.setUseExpectContinue)

@@ -10,8 +10,8 @@ import akka.actor.{ ActorSystem, Scheduler }
 import akka.event.{ Logging, LoggingAdapter }
 import java.util.{ Map => JMap }
 import scala.concurrent._
-import scala.util.{ Try, Success, Failure }
-import java.util.concurrent.{ ThreadPoolExecutor, LinkedBlockingQueue, TimeUnit }
+import scala.util.{ Failure, Success, Try }
+import java.util.concurrent.{ LinkedBlockingQueue, ThreadPoolExecutor, TimeUnit }
 import scala.collection.generic.CanBuildFrom
 import java.util.concurrent.Executors
 import java.util.Collections
@@ -20,23 +20,23 @@ import java.nio.ByteBuffer
 package object journal {
 
   // field names
-  val Key = "par"
-  val Sort = "num"
-  val Payload = "pay"
+  val Key        = "par"
+  val Sort       = "num"
+  val Payload    = "pay"
   val SequenceNr = "seq"
-  val AtomIndex = "idx"
-  val AtomEnd = "cnt"
+  val AtomIndex  = "idx"
+  val AtomEnd    = "cnt"
 
   /* PersistenceRepr fields
    sequence_nr and persistence_id extracted from the key
-  */
+   */
   val PersistentId = "persistence_id"
-  val WriterUuid = "writer_uuid"
+  val WriterUuid   = "writer_uuid"
 
   val Manifest = "manifest"
 
-  val Event = "event"
-  val SerializerId = "ev_ser_id"
+  val Event              = "event"
+  val SerializerId       = "ev_ser_id"
   val SerializerManifest = "ev_ser_manifest"
 
   val KeyPayloadOverhead = 26 // including fixed parts of partition key and 36 bytes fudge factor

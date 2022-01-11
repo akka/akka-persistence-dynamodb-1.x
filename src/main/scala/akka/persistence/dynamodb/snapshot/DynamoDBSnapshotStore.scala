@@ -13,8 +13,8 @@ import akka.persistence.dynamodb._
 import scala.concurrent.Future
 
 class DynamoDBSnapshotStore(config: Config) extends SnapshotStore with DynamoDBSnapshotRequests with ActorLogging {
-  val settings = new DynamoDBSnapshotConfig(config)
-  val dynamo = dynamoClient(context.system, settings)
+  val settings      = new DynamoDBSnapshotConfig(config)
+  val dynamo        = dynamoClient(context.system, settings)
   val serialization = SerializationExtension(context.system)
   import settings._
 

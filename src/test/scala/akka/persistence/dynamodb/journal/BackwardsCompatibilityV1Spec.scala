@@ -17,25 +17,28 @@ import com.amazonaws.regions.Regions
 import com.amazonaws.services.dynamodbv2.{ AmazonDynamoDB, AmazonDynamoDBClient }
 import com.amazonaws.services.dynamodbv2.document.{ DynamoDB, Item }
 import com.typesafe.config.ConfigFactory
+import akka.persistence.dynamodb.IntegSpec
 
-class BackwardsCompatibilityV1Spec extends TestKit(ActorSystem("PartialAsyncSerializationSpec"))
+class BackwardsCompatibilityV1Spec
+    extends TestKit(ActorSystem("PartialAsyncSerializationSpec"))
     with ImplicitSender
     with WordSpecLike
     with BeforeAndAfterAll
     with Matchers
     with ScalaFutures
     with TypeCheckedTripleEquals
-    with DynamoDBUtils {
+    with DynamoDBUtils
+    with IntegSpec {
 
   def loadV1VersionData(): Unit = {
-    val config = ConfigFactory.load()
-    val endpoint = config.getString("my-dynamodb-journal.endpoint")
+    val config    = ConfigFactory.load()
+    val endpoint  = config.getString("my-dynamodb-journal.endpoint")
     val tableName = config.getString("my-dynamodb-journal.journal-table")
-    val accesKey = config.getString("my-dynamodb-journal.aws-access-key-id")
+    val accesKey  = config.getString("my-dynamodb-journal.aws-access-key-id")
     val secretKey = config.getString("my-dynamodb-journal.aws-secret-access-key")
 
-    val client: AmazonDynamoDB = new AmazonDynamoDBClient(new BasicAWSCredentials(accesKey, secretKey))
-      .withRegion(Regions.US_EAST_1)
+    val client: AmazonDynamoDB =
+      new AmazonDynamoDBClient(new BasicAWSCredentials(accesKey, secretKey)).withRegion(Regions.US_EAST_1)
 
     client.setEndpoint(endpoint)
 
@@ -82,29 +85,31 @@ class BackwardsCompatibilityV1Spec extends TestKit(ActorSystem("PartialAsyncSeri
   }
 
   override def beforeAll(): Unit = {
+    super.beforeAll()
     ensureJournalTableExists()
     loadV1VersionData()
   }
 
   override def afterAll(): Unit = {
+    super.afterAll()
     client.shutdown()
     system.terminate().futureValue
   }
 
   override val persistenceId = "OldFormatEvents"
-  lazy val journal = Persistence(system).journalFor("")
+  lazy val journal           = Persistence(system).journalFor("")
 
   import settings._
 
   "DynamoDB Journal (Backwards Compatibility Test)" must {
 
     val messages = 20
-    val probe = TestProbe()
+    val probe    = TestProbe()
 
     s"successfully replay events in old format - created by old version of the plugin" in {
 
       journal ! ReplayMessages(0, 20, Long.MaxValue, persistenceId, probe.ref)
-      (1 to messages) foreach (i => {
+      (1 to messages).foreach(i => {
         val msg = probe.expectMsgType[ReplayedMessage]
         msg.persistent.sequenceNr.toInt should ===(i)
         msg.persistent.payload should ===(f"a-$i%04d")

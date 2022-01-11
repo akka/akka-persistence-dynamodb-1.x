@@ -14,63 +14,71 @@ import com.amazonaws.services.dynamodbv2.model._
 import java.util.{ HashMap => JHMap }
 import akka.persistence.dynamodb._
 
-class RecoveryConsistencySpec extends TestKit(ActorSystem("FailureReportingSpec"))
+class RecoveryConsistencySpec
+    extends TestKit(ActorSystem("FailureReportingSpec"))
     with ImplicitSender
     with WordSpecLike
     with BeforeAndAfterAll
     with Matchers
     with ScalaFutures
     with TypeCheckedTripleEquals
-    with DynamoDBUtils {
+    with DynamoDBUtils
+    with IntegSpec {
 
-  override def beforeAll(): Unit = ensureJournalTableExists()
+  override def beforeAll(): Unit = {
+    super.beforeAll()
+    ensureJournalTableExists()
+  }
+
   override def afterAll(): Unit = {
     client.shutdown()
     system.terminate().futureValue
+    super.afterAll()
   }
 
   override val persistenceId = "RecoveryConsistencySpec"
-  lazy val journal = Persistence(system).journalFor("")
+  lazy val journal           = Persistence(system).journalFor("")
 
   import settings._
 
   "DynamoDB Journal (Recovery)" must {
 
     val repetitions = 50
-    val messages = 20
-    val writes = (1 to messages).map(i => AtomicWrite(persistentRepr(f"a-$i%04d")))
-    val probe = TestProbe()
+    val messages    = 20
+    val writes      = (1 to messages).map(i => AtomicWrite(persistentRepr(f"a-$i%04d")))
+    val probe       = TestProbe()
 
-    for (i <- 1 to repetitions) s"not return intermediate values for the highest sequence number ($i of $repetitions)" in {
-      journal ! Purge(persistenceId, testActor)
-      expectMsg(Purged(persistenceId))
-      journal ! WriteMessages(writes, testActor, 1)
-      journal ! ReplayMessages(1, 0, Long.MaxValue, persistenceId, probe.ref)
-      expectMsg(WriteMessagesSuccessful)
-      (1 to messages) foreach (i => expectMsgType[WriteMessageSuccess].persistent.sequenceNr.toInt should ===(i))
-      probe.expectMsg(RecoverySuccess(messages))
-    }
+    for (i <- 1 to repetitions)
+      s"not return intermediate values for the highest sequence number ($i of $repetitions)" in {
+        journal ! Purge(persistenceId, testActor)
+        expectMsg(Purged(persistenceId))
+        journal ! WriteMessages(writes, testActor, 1)
+        journal ! ReplayMessages(1, 0, Long.MaxValue, persistenceId, probe.ref)
+        expectMsg(WriteMessagesSuccessful)
+        (1 to messages).foreach(i => expectMsgType[WriteMessageSuccess].persistent.sequenceNr.toInt should ===(i))
+        probe.expectMsg(RecoverySuccess(messages))
+      }
 
     "only replay completely persisted AtomicWrites" in {
       val more =
-        AtomicWrite((1 to 3).map(i => persistentRepr(f"b-$i"))) :: // hole in the middle
-          AtomicWrite((4 to 6).map(i => persistentRepr(f"b-$i"))) :: // hole in the beginning
-          AtomicWrite((7 to 9).map(i => persistentRepr(f"b-$i"))) :: // no hole
-          AtomicWrite((10 to 12).map(i => persistentRepr(f"b-$i"))) :: // hole in the end
-          AtomicWrite((13 to 15).map(i => persistentRepr(f"b-$i"))) :: // hole in the end
-          AtomicWrite(persistentRepr("c")) ::
-          AtomicWrite((17 to 19).map(i => persistentRepr(f"d-$i"))) :: // hole in the end
-          Nil
+        AtomicWrite((1 to 3).map(i => persistentRepr(f"b-$i"))) ::   // hole in the middle
+        AtomicWrite((4 to 6).map(i => persistentRepr(f"b-$i"))) ::   // hole in the beginning
+        AtomicWrite((7 to 9).map(i => persistentRepr(f"b-$i"))) ::   // no hole
+        AtomicWrite((10 to 12).map(i => persistentRepr(f"b-$i"))) :: // hole in the end
+        AtomicWrite((13 to 15).map(i => persistentRepr(f"b-$i"))) :: // hole in the end
+        AtomicWrite(persistentRepr("c")) ::
+        AtomicWrite((17 to 19).map(i => persistentRepr(f"d-$i"))) :: // hole in the end
+        Nil
       journal ! WriteMessages(more, testActor, 1)
       expectMsg(WriteMessagesSuccessful)
-      (messages + 1 to messages + 19) foreach (i => expectMsg(WriteMessageSuccess(generatedMessages(i), 1)))
+      (messages + 1 to messages + 19).foreach(i => expectMsg(WriteMessageSuccess(generatedMessages(i), 1)))
 
-      Seq(2, 4, 12, 15, 19) foreach (i => delete(messages + i))
+      Seq(2, 4, 12, 15, 19).foreach(i => delete(messages + i))
 
       journal ! ReplayMessages(0, Long.MaxValue, Long.MaxValue, persistenceId, testActor)
       for {
         i <- 1 to (messages + 19)
-        if (i <= messages || (i >= (messages + 7) && i <= (messages + 9)) || i == (messages + 16))
+        if i <= messages || (i >= (messages + 7) && i <= (messages + 9)) || i == (messages + 16)
       } expectMsg(ReplayedMessage(generatedMessages(i)))
       expectMsg(RecoverySuccess(messages + 18))
 
@@ -80,11 +88,11 @@ class RecoveryConsistencySpec extends TestKit(ActorSystem("FailureReportingSpec"
 
     "read correct highest sequence number even if a Sort=0 entry is lost" in {
       val start = messages + 19
-      val end = (start / 100 + 1) * 100
-      val more = (start to end).map(i => AtomicWrite(persistentRepr(f"e-$i")))
+      val end   = (start / 100 + 1) * 100
+      val more  = (start to end).map(i => AtomicWrite(persistentRepr(f"e-$i")))
       journal ! WriteMessages(more, testActor, 1)
       expectMsg(WriteMessagesSuccessful)
-      (start to end) foreach (i => expectMsg(WriteMessageSuccess(generatedMessages(i), 1)))
+      (start to end).foreach(i => expectMsg(WriteMessageSuccess(generatedMessages(i), 1)))
 
       delete(end)
 
@@ -102,7 +110,7 @@ class RecoveryConsistencySpec extends TestKit(ActorSystem("FailureReportingSpec"
 
       journal ! WriteMessages(more1, testActor, 1)
       expectMsg(WriteMessagesSuccessful)
-      (start to (start + 2)) foreach (i => expectMsg(WriteMessageSuccess(generatedMessages(i), 1)))
+      (start to (start + 2)).foreach(i => expectMsg(WriteMessageSuccess(generatedMessages(i), 1)))
 
       delete(start + 2)
 
@@ -113,10 +121,10 @@ class RecoveryConsistencySpec extends TestKit(ActorSystem("FailureReportingSpec"
 
       journal ! WriteMessages(more2, testActor, 1)
       expectMsg(WriteMessagesSuccessful)
-      ((start + 2) to (start + 4)) foreach (i => expectMsg(WriteMessageSuccess(generatedMessages(i), 1)))
+      ((start + 2) to (start + 4)).foreach(i => expectMsg(WriteMessageSuccess(generatedMessages(i), 1)))
 
       journal ! ReplayMessages(start, Long.MaxValue, Long.MaxValue, persistenceId, testActor)
-      ((start + 2) to (start + 4)) foreach (i => expectMsg(ReplayedMessage(generatedMessages(i))))
+      ((start + 2) to (start + 4)).foreach(i => expectMsg(ReplayedMessage(generatedMessages(i))))
       expectMsg(RecoverySuccess(start + 4))
     }
 
@@ -126,7 +134,7 @@ class RecoveryConsistencySpec extends TestKit(ActorSystem("FailureReportingSpec"
 
       journal ! WriteMessages(more1, testActor, 1)
       expectMsg(WriteMessagesSuccessful)
-      (start to (start + 2)) foreach (i => expectMsg(WriteMessageSuccess(generatedMessages(i), 1)))
+      (start to (start + 2)).foreach(i => expectMsg(WriteMessageSuccess(generatedMessages(i), 1)))
 
       delete(start + 1)
       delete(start + 2)
@@ -138,10 +146,10 @@ class RecoveryConsistencySpec extends TestKit(ActorSystem("FailureReportingSpec"
 
       journal ! WriteMessages(more2, testActor, 1)
       expectMsg(WriteMessagesSuccessful)
-      ((start + 1) to (start + 3)) foreach (i => expectMsg(WriteMessageSuccess(generatedMessages(i), 1)))
+      ((start + 1) to (start + 3)).foreach(i => expectMsg(WriteMessageSuccess(generatedMessages(i), 1)))
 
       journal ! ReplayMessages(start, Long.MaxValue, Long.MaxValue, persistenceId, testActor)
-      ((start + 1) to (start + 3)) foreach (i => expectMsg(ReplayedMessage(generatedMessages(i))))
+      ((start + 1) to (start + 3)).foreach(i => expectMsg(ReplayedMessage(generatedMessages(i))))
       expectMsg(RecoverySuccess(start + 3))
     }
 

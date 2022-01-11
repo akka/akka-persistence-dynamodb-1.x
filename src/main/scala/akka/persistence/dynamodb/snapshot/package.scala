@@ -6,13 +6,13 @@ package akka.persistence.dynamodb
 package object snapshot {
 
   // field names
-  val Key = "par"
-  val Timestamp = "ts"
+  val Key            = "par"
+  val Timestamp      = "ts"
   val TimestampIndex = "ts-idx"
 
-  val Payload = "pay"
-  val SequenceNr = "seq"
-  val SerializerId = "ser_id"
+  val Payload            = "pay"
+  val SequenceNr         = "seq"
+  val SerializerId       = "ser_id"
   val SerializerManifest = "ser_manifest"
-  val PayloadData = "pay_data"
+  val PayloadData        = "pay_data"
 }

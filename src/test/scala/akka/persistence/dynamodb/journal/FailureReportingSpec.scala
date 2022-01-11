@@ -21,14 +21,16 @@ import com.typesafe.config.ConfigFactory
 
 import akka.persistence.dynamodb._
 
-class FailureReportingSpec extends TestKit(ActorSystem("FailureReportingSpec"))
+class FailureReportingSpec
+    extends TestKit(ActorSystem("FailureReportingSpec"))
     with ImplicitSender
     with WordSpecLike
     with BeforeAndAfterAll
     with Matchers
     with ScalaFutures
     with TypeCheckedTripleEquals
-    with DynamoDBUtils {
+    with DynamoDBUtils
+    with IntegSpec {
 
   implicit val patience = PatienceConfig(5.seconds)
 
@@ -40,21 +42,25 @@ class FailureReportingSpec extends TestKit(ActorSystem("FailureReportingSpec"))
     val rej = expectMsgType[WriteMessageRejected]
     rej.message should ===(repr)
     rej.cause shouldBe a[DynamoDBJournalRejection]
-    rej.cause.getMessage should include regex msg
+    (rej.cause.getMessage should include).regex(msg)
   }
 
   def expectFailure[T: Manifest](msg: String, repr: PersistentRepr) = {
     val rej = expectMsgType[WriteMessageFailure]
     rej.message should ===(repr)
     rej.cause shouldBe a[T]
-    rej.cause.getMessage should include regex msg
+    (rej.cause.getMessage should include).regex(msg)
   }
 
-  override def beforeAll(): Unit = ensureJournalTableExists()
+  override def beforeAll(): Unit = {
+    super.beforeAll()
+    ensureJournalTableExists()
+  }
 
   override def afterAll(): Unit = {
     client.shutdown()
     system.terminate().futureValue
+    super.afterAll()
   }
 
   "DynamoDB Journal Failure Reporting" must {
@@ -64,11 +70,9 @@ class FailureReportingSpec extends TestKit(ActorSystem("FailureReportingSpec"))
         .parseString("my-dynamodb-journal.journal-table=ThisTableDoesNotExist")
         .withFallback(ConfigFactory.load())
       implicit val system = ActorSystem("FailureReportingSpec-test1", config)
-      try
-        EventFilter[ResourceNotFoundException](pattern     = ".*ThisTableDoesNotExist.*", occurrences = 1).intercept {
-          Persistence(system).journalFor("")
-        }
-      finally system.terminate()
+      try EventFilter[ResourceNotFoundException](pattern = ".*ThisTableDoesNotExist.*", occurrences = 1).intercept {
+        Persistence(system).journalFor("")
+      } finally system.terminate()
     }
 
     "keep running even when journal table is absent" in {
@@ -78,13 +82,15 @@ class FailureReportingSpec extends TestKit(ActorSystem("FailureReportingSpec"))
       implicit val system = ActorSystem("FailureReportingSpec-test2", config)
       try {
         val journal =
-          EventFilter[ResourceNotFoundException](pattern     = ".*ThisTableDoesNotExist.*", occurrences = 1).intercept {
-            EventFilter.error(pattern     = ".*requests will fail.*ThisTableDoesNotExist.*", occurrences = 1).intercept {
+          EventFilter[ResourceNotFoundException](pattern = ".*ThisTableDoesNotExist.*", occurrences = 1).intercept {
+            EventFilter.error(pattern = ".*requests will fail.*ThisTableDoesNotExist.*", occurrences = 1).intercept {
               Persistence(system).journalFor("")
             }
           }
-        EventFilter[ResourceNotFoundException](pattern     = ".*BatchGetItemRequest.*", occurrences = 1).intercept {
-          EventFilter[DynamoDBJournalFailure](pattern     = s".*failed.*read-highest-sequence-number.*$persistenceId.*", occurrences = 1).intercept {
+        EventFilter[ResourceNotFoundException](pattern = ".*BatchGetItemRequest.*", occurrences = 1).intercept {
+          EventFilter[DynamoDBJournalFailure](
+            pattern = s".*failed.*read-highest-sequence-number.*$persistenceId.*",
+            occurrences = 1).intercept {
             journal ! ReplayMessages(0, Long.MaxValue, 0, persistenceId, testActor)
             expectMsgType[ReplayMessagesFailure]
           }
@@ -97,18 +103,15 @@ class FailureReportingSpec extends TestKit(ActorSystem("FailureReportingSpec"))
         .parseString("my-dynamodb-journal{log-config=on\naws-client-config.protocol=HTTPS}")
         .withFallback(ConfigFactory.load())
       implicit val system = ActorSystem("FailureReportingSpec-test3", config)
-      try
-        EventFilter.info(pattern     = ".*protocol:https.*", occurrences = 1).intercept {
-          Persistence(system).journalFor("")
-        }
-      finally system.terminate()
+      try EventFilter.info(pattern = ".*protocol:https.*", occurrences = 1).intercept {
+        Persistence(system).journalFor("")
+      } finally system.terminate()
     }
 
     "not notify user about config errors when starting the default journal" in {
-      val config = ConfigFactory.parseString(
-        """
+      val config          = ConfigFactory.parseString("""
 dynamodb-journal {
-  endpoint = "http://localhost:8000"
+  endpoint = "http://localhost:8888"
   aws-access-key-id = "AWS_ACCESS_KEY_ID"
   aws-secret-access-key = "AWS_SECRET_ACCESS_KEY"
 }
@@ -120,7 +123,7 @@ akka.loggers = ["akka.testkit.TestEventListener"]
       try {
         val probe = TestProbe()
         system.eventStream.subscribe(probe.ref, classOf[Logging.LogEvent])
-        EventFilter[ResourceNotFoundException](pattern     = ".*akka-persistence.*", occurrences = 1).intercept {
+        EventFilter[ResourceNotFoundException](pattern = ".*akka-persistence.*", occurrences = 1).intercept {
           Persistence(system).journalFor("")
         }
         probe.expectMsgType[Logging.Error].message.toString should include("DescribeTableRequest(akka-persistence)")
@@ -136,21 +139,21 @@ akka.loggers = ["akka.testkit.TestEventListener"]
       implicit val system = ActorSystem("FailureReportingSpec-test5", config)
       try {
         val journal =
-          EventFilter[ResourceNotFoundException](pattern     = ".*ThisTableDoesNotExist.*", occurrences = 1).intercept {
-            EventFilter.error(pattern     = ".*requests will fail.*ThisTableDoesNotExist.*", occurrences = 1).intercept {
+          EventFilter[ResourceNotFoundException](pattern = ".*ThisTableDoesNotExist.*", occurrences = 1).intercept {
+            EventFilter.error(pattern = ".*requests will fail.*ThisTableDoesNotExist.*", occurrences = 1).intercept {
               Persistence(system).journalFor("")
             }
           }
 
         val msgs = (1 to 3).map(i => persistentRepr(f"w-$i"))
 
-        EventFilter[ResourceNotFoundException](pattern     = ".*ThisTableDoesNotExist.*", occurrences = 1).intercept {
+        EventFilter[ResourceNotFoundException](pattern = ".*ThisTableDoesNotExist.*", occurrences = 1).intercept {
           journal ! WriteMessages(AtomicWrite(msgs(0)) :: Nil, testActor, 42)
           expectMsgType[WriteMessagesFailed].cause shouldBe a[DynamoDBJournalFailure]
           expectFailure[DynamoDBJournalFailure]("ThisTableDoesNotExist", msgs(0))
         }
 
-        EventFilter[ResourceNotFoundException](pattern     = ".*ThisTableDoesNotExist.*", occurrences = 1).intercept {
+        EventFilter[ResourceNotFoundException](pattern = ".*ThisTableDoesNotExist.*", occurrences = 1).intercept {
           journal ! WriteMessages(AtomicWrite(msgs(1)) :: AtomicWrite(msgs(2)) :: Nil, testActor, 42)
           expectMsgType[WriteMessagesFailed].cause shouldBe a[DynamoDBJournalFailure]
           expectFailure[DynamoDBJournalFailure]("ThisTableDoesNotExist", msgs(1))
@@ -161,16 +164,16 @@ akka.loggers = ["akka.testkit.TestEventListener"]
 
     "properly reject too large payloads" in {
       val journal = Persistence(system).journalFor("")
-      val msgs = Vector("t-1", bigMsg, "t-3", "t-4", bigMsg, "t-6").map(persistentRepr)
+      val msgs    = Vector("t-1", bigMsg, "t-3", "t-4", bigMsg, "t-6").map(persistentRepr)
       val write =
         AtomicWrite(msgs(0)) ::
-          AtomicWrite(msgs(1)) ::
-          AtomicWrite(msgs(2)) ::
-          AtomicWrite(msgs(3) :: msgs(4) :: Nil) ::
-          AtomicWrite(msgs(5)) ::
-          Nil
+        AtomicWrite(msgs(1)) ::
+        AtomicWrite(msgs(2)) ::
+        AtomicWrite(msgs(3) :: msgs(4) :: Nil) ::
+        AtomicWrite(msgs(5)) ::
+        Nil
 
-      EventFilter[DynamoDBJournalRejection](occurrences = 2) intercept {
+      EventFilter[DynamoDBJournalRejection](occurrences = 2).intercept {
         journal ! WriteMessages(write, testActor, 42)
         expectMsg(WriteMessagesSuccessful)
         expectMsg(WriteMessageSuccess(msgs(0), 42))
@@ -192,7 +195,7 @@ akka.loggers = ["akka.testkit.TestEventListener"]
       import client._
       def desc[T](aws: T)(implicit d: Describe[_ >: T]): String = d.desc(aws)
 
-      val keyItem = Map(Key -> S("TheKey"), Sort -> N("42")).asJava
+      val keyItem  = Map(Key -> S("TheKey"), Sort -> N("42")).asJava
       val key2Item = Map(Key -> S("The2Key"), Sort -> N("43")).asJava
 
       "reporting table problems" in {
@@ -218,16 +221,17 @@ akka.loggers = ["akka.testkit.TestEventListener"]
       }
 
       "reporting query problems" in {
-        val aws = new QueryRequest().withTableName("TheTable").withExpressionAttributeValues(Map(":kkey" -> S("TheKey")).asJava)
+        val aws =
+          new QueryRequest().withTableName("TheTable").withExpressionAttributeValues(Map(":kkey" -> S("TheKey")).asJava)
         desc(aws) should include("Query")
         desc(aws) should include("TheTable")
         desc(aws) should include("TheKey")
       }
 
       "reporting batch write problems" in {
-        val write = new WriteRequest().withPutRequest(new PutRequest().withItem(keyItem))
+        val write  = new WriteRequest().withPutRequest(new PutRequest().withItem(keyItem))
         val remove = new WriteRequest().withDeleteRequest(new DeleteRequest().withKey(key2Item))
-        val aws = new BatchWriteItemRequest().withRequestItems(Map("TheTable" -> Seq(write, remove).asJava).asJava)
+        val aws    = new BatchWriteItemRequest().withRequestItems(Map("TheTable" -> Seq(write, remove).asJava).asJava)
         desc(aws) should include("BatchWriteItem")
         desc(aws) should include("TheTable")
         desc(aws) should include("put[par=TheKey,num=42]")
@@ -235,7 +239,7 @@ akka.loggers = ["akka.testkit.TestEventListener"]
       }
 
       "reporting batch read problems" in {
-        val ka = new KeysAndAttributes().withKeys(keyItem, key2Item)
+        val ka  = new KeysAndAttributes().withKeys(keyItem, key2Item)
         val aws = new BatchGetItemRequest().withRequestItems(Map("TheTable" -> ka).asJava)
         desc(aws) should include("BatchGetItem")
         desc(aws) should include("TheTable")

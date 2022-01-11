@@ -11,11 +11,12 @@ import akka.persistence.CapabilityFlag
 import com.typesafe.config.ConfigFactory
 import scala.concurrent.duration._
 import scala.concurrent.Await
+import akka.persistence.dynamodb.IntegSpec
 
 object AsyncDynamoDBJournalSpec {
 
-  val config = ConfigFactory.parseString(
-    """
+  val config = ConfigFactory
+    .parseString("""
       |akka.actor {
       |  serializers {
       |    test = "akka.persistence.dynamodb.journal.TestSerializer"
@@ -24,11 +25,12 @@ object AsyncDynamoDBJournalSpec {
       |    "java.io.Serializable" = test
       |  }
       |}
-    """.stripMargin).withFallback(ConfigFactory.load())
+    """.stripMargin)
+    .withFallback(ConfigFactory.load())
 
 }
 
-class AsyncDynamoDBJournalSpec extends JournalSpec(AsyncDynamoDBJournalSpec.config) with DynamoDBUtils {
+class AsyncDynamoDBJournalSpec extends JournalSpec(AsyncDynamoDBJournalSpec.config) with DynamoDBUtils with IntegSpec {
 
   override def beforeAll(): Unit = {
     super.beforeAll()
@@ -36,8 +38,8 @@ class AsyncDynamoDBJournalSpec extends JournalSpec(AsyncDynamoDBJournalSpec.conf
   }
 
   override def afterAll(): Unit = {
-    super.afterAll()
     client.shutdown()
+    super.afterAll()
   }
 
   override def writeMessages(fromSnr: Int, toSnr: Int, pid: String, sender: ActorRef, writerUuid: String): Unit = {
