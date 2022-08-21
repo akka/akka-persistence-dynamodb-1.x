@@ -41,6 +41,9 @@ jobs:
       - name: Compile all code with default compiler
         run: sbt Test/compile
 
+      - name: Format check
+        run: sbt scalafmtCheckAll
+
   test:
     name: Build and Test
     runs-on: ubuntu-20.04
