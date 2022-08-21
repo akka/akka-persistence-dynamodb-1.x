@@ -1,7 +1,7 @@
 package akka.persistence.dynamodb.journal
 
 import akka.actor.ActorSystem
-import akka.stream.{ActorMaterializer, Materializer, SystemMaterializer}
+import akka.stream.{ ActorMaterializer, Materializer, SystemMaterializer }
 import akka.stream.scaladsl.Source
 import akka.stream.testkit.scaladsl.TestSink
 import akka.testkit.TestKit
