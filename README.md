@@ -5,11 +5,11 @@ A replicated [Akka Persistence](http://doc.akka.io/docs/akka/2.4.0/scala/persist
 [Amazon DynamoDB](http://aws.amazon.com/dynamodb/).
 
 - This plugin implements both a journal as well as a snapshot store,
-- Please note, however, that it does not include an Akka Persistence Query plugin.
+- This includes a Akka Persistence Query plugin. However, this requires an additional GSI for efficient usage.
 
 Supported versions:
 - Scala: `2.12.x`, `2.13.x`
-- Akka: `2.4.14+` and `2.5.x+` and `2.6.x+` (see notes below how to use with 2.5)
+- Akka: `2.5.x+` and `2.6.x+`
 - Java: `1.8+`
 
 [![Join the chat at https://gitter.im/akka/akka-persistence-dynamodb](https://badges.gitter.im/akka/akka-persistence-dynamodb.svg)](https://gitter.im/akka/akka-persistence-dynamodb?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
@@ -23,15 +23,15 @@ This plugin is published to the Maven Central repository with the following name
 ~~~
 <dependency>
     <groupId>com.typesafe.akka</groupId>
-    <artifactId>akka-persistence-dynamodb_2.11</artifactId>
-    <version>1.2.0-RC2</version>
+    <artifactId>akka-persistence-dynamodb_2.13</artifactId>
+    <version>1.3.0</version>
 </dependency>
 ~~~
 
 or for sbt users:
 
 ```sbt
-libraryDependencies += "com.typesafe.akka" %% "akka-persistence-dynamodb" % "1.2.0-RC2"
+libraryDependencies += "com.typesafe.akka" %% "akka-persistence-dynamodb" % "1.3.0"
 ```
 
 Configuration
@@ -84,7 +84,7 @@ The table to create for snapshot storage has the schema:
 The Dynamodb item of a snapshot [can be 400 kB](http://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Limits.html#limits-items). Using a binary serialisation format like ProtoBuf or Kryo will use that space most effectively.
 
 ### Read journal (Akka persistence query)
-(**Since:** `1.3.0`; contributed by [@joost-de-vries](https://github.com/joost-de-vries))  
+(**Since:** `1.3.0`; contributed by [@joost-de-vries](https://github.com/joost-de-vries))
 See `CreatePersistenceIdsIndex.createPersistenceIdsIndexRequest` how to create the Global Secondary Index that is required to query currentPersistenceIds
 ~~~
 dynamodb-read-journal {
@@ -207,44 +207,10 @@ When writing an item we typically do not touch the high sequence number storage,
 Using with Akka 2.5.x
 ---------------------
 
-This plugin depends on Akka 2.4, however since [Akka maintains strict backwards compatibility guarantees](http://doc.akka.io/docs/akka/current/scala/common/binary-compatibility-rules.html) across minor versions,
-it is completely compatible to use this plugin with Akka 2.5.x.
-
-Please make sure to depend on all Akka artifacts (those with the artifact name begining with `akka-*`) are depended on in the same version - as mixing versions is *not* legal. For example, if you depend on Akka Persistence in `2.5.3`, make sure that Akka Streams and Actors are also depended on in the same version. Please always use the latest patch version available (!).
-
-Changelog
----------------------
-
-v 1.2.0
----------------------
-
-* Depends on Akka 2.5.
-* Adds Support for the Async Serializers - which enables the use of the plugin with Lightbend extensions [GDPR Addons](https://developer.lightbend.com/docs/akka-commercial-addons/current/gdpr/index.html)
-
-Schema changes are required in order to support async serializers as we need to know what data deserializer to use for the data payload.
-The data payload is stored in a dedicated `event` field. Going towards similar schema as [akka-persistence-cassandra](https://github.com/akka/akka-persistence-cassandra)
-
-*Journal Plugin*
-~~~
-val Event = "event" -> PeristentRepr.payload
-val SerializerId = "ev_ser_id" -> Serializer id used for serializing event above
-val SerializerManifest = "ev_ser_manifest" -> Serializer manifest of the event above
-val Manifest = "manifest" -> String manifest used for whole PeristentRepr
-
-~~~
-
-*Snapshot Plugin*
-~~~
-val SerializerId = "ser_id" -> Serializer used for serializing the snapshot payload
-val SerializerManifest = "ser_manifest" -> String manifest of the snapshot payload
-val PayloadData = "pay_data" -> the actual serialized data of the snapshot, need to distinguish between the old a new format
-~~~
-The existence of the old `val Payload = "pay"` field triggers old serialization. The new serialization doesn't Serialize theq
-Snapshot wrapper class.
-
-
-Both Journal and Snapshot checks the existence of new data fields first and switches the behaviour in order
-to make the change backwards compatible.
+Please make sure to depend on all Akka artifacts (those with the artifact name begining with
+`akka-*`) are depended on in the same version - as mixing versions is *not* legal. For example, if
+you depend on Akka Persistence in `2.5.3`, make sure that Akka Streams and Actors are also depended
+on in the same version. Please always use the latest patch version available (!).
 
 Credits
 -------
@@ -252,6 +218,10 @@ Credits
 - Initial development was done by [Scott Clasen](https://github.com/sclasen/akka-persistence-dynamodb).
 - Update to Akka 2.4 and further development up to version 1.0 was kindly sponsored by [Zynga Inc.](https://www.zynga.com/).
 - The snapshot store and readjournal were contributed by [Joost de Vries](https://github.com/joost-de-vries)
+- [Corey O'Connor](https://dogheadbone.com/)
+- Ryan Means
+- Jean-Luc Deprez
+- Michal Janousek
 
 Support
 -------
