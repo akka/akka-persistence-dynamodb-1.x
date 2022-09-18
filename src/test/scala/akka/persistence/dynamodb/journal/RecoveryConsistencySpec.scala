@@ -7,7 +7,7 @@ import akka.actor.ActorSystem
 import akka.persistence.JournalProtocol._
 import akka.persistence._
 import akka.persistence.dynamodb._
-import akka.persistence.dynamodb.query.scaladsl.DynamodbReadJournal
+import akka.persistence.dynamodb.query.scaladsl.DynamoDBReadJournal
 import akka.persistence.query.PersistenceQuery
 import akka.stream.scaladsl.Sink
 import akka.stream.{ Materializer, SystemMaterializer }
@@ -49,7 +49,7 @@ class RecoveryConsistencySpec
 
   private lazy val journal = Persistence(system).journalFor("")
   private lazy val queries =
-    PersistenceQuery(system).readJournalFor[DynamodbReadJournal](DynamodbReadJournal.Identifier)
+    PersistenceQuery(system).readJournalFor[DynamoDBReadJournal](DynamoDBReadJournal.Identifier)
   import journalSettings._
 
   "DynamoDB Journal (Recovery)" must {

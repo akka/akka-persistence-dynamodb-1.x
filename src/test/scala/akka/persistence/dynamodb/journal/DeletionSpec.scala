@@ -7,7 +7,7 @@ import akka.actor.ActorSystem
 import akka.persistence.JournalProtocol._
 import akka.persistence._
 import akka.persistence.dynamodb.IntegSpec
-import akka.persistence.dynamodb.query.scaladsl.DynamodbReadJournal
+import akka.persistence.dynamodb.query.scaladsl.DynamoDBReadJournal
 import akka.persistence.query.PersistenceQuery
 import akka.stream.scaladsl.Sink
 import akka.stream.{ Materializer, SystemMaterializer }
@@ -48,7 +48,7 @@ class DeletionSpec
   override val persistenceId              = "DeletionSpec"
   implicit val materializer: Materializer = SystemMaterializer(system).materializer
   lazy val journal                        = Persistence(system).journalFor("")
-  lazy val queries                        = PersistenceQuery(system).readJournalFor[DynamodbReadJournal](DynamodbReadJournal.Identifier)
+  lazy val queries                        = PersistenceQuery(system).readJournalFor[DynamoDBReadJournal](DynamoDBReadJournal.Identifier)
   val msgs                                = (1 to 149).map(i => s"a-$i")
   val more                                = (150 to 200).map(i => s"b-$i")
 

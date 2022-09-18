@@ -5,7 +5,7 @@ import akka.persistence.query.EventEnvelope
 import akka.persistence.query.scaladsl.CurrentEventsByPersistenceIdQuery
 import akka.stream.scaladsl.Source
 
-trait DynamodbCurrentEventsByPersistenceIdQuery extends CurrentEventsByPersistenceIdQuery {
+trait DynamoDBCurrentEventsByPersistenceIdQuery extends CurrentEventsByPersistenceIdQuery {
 
   /**
    * Same type of query as [[akka.persistence.query.scaladsl.EventsByPersistenceIdQuery.eventsByPersistenceId]]

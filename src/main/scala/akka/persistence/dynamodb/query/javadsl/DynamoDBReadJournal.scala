@@ -6,10 +6,10 @@ import akka.stream.javadsl.Source
 import akka.persistence.dynamodb.query.scaladsl
 import akka.persistence.query.javadsl.{ CurrentEventsByPersistenceIdQuery, CurrentPersistenceIdsQuery }
 
-object DynamodbReadJournal {
+object DynamoDBReadJournal {
 
   /**
-   * The default identifier for [[DynamodbReadJournal]] to be used with
+   * The default identifier for [[DynamoDBReadJournal]] to be used with
    * `akka.persistence.query.PersistenceQuery#readJournalFor`.
    *
    * The value is `"dynamodb-read-journal"` and corresponds
@@ -23,17 +23,17 @@ object DynamodbReadJournal {
  *
  * It is retrieved with:
  * {{{
- * DynamodbReadJournal queries =
- *   PersistenceQuery.get(system).getReadJournalFor(DynamodbReadJournal.class, DynamodbReadJournal.Identifier());
+ * DynamoDBReadJournal queries =
+ *   PersistenceQuery.get(system).getReadJournalFor(DynamoDBReadJournal.class, DynamoDBReadJournal.Identifier());
  * }}}
  *
- * Corresponding Scala API is in [[DynamodbReadJournal]].
+ * Corresponding Scala API is in [[DynamoDBReadJournal]].
  *
  * Configuration settings can be defined in the configuration section with the
  * absolute path corresponding to the identifier, which is `"dynamodb-read-journal"`
- * for the default [[DynamodbReadJournal#Identifier]]. See `reference.conf`.
+ * for the default [[DynamoDBReadJournal#Identifier]]. See `reference.conf`.
  */
-class DynamodbReadJournal(scaladslReadJournal: scaladsl.DynamodbReadJournal)
+class DynamoDBReadJournal(scaladslReadJournal: scaladsl.DynamoDBReadJournal)
     extends akka.persistence.query.javadsl.ReadJournal
     //    with akka.persistence.query.javadsl.EventsByTagQuery
     with CurrentEventsByPersistenceIdQuery

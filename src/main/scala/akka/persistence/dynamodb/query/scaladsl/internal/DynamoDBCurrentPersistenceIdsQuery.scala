@@ -2,7 +2,7 @@ package akka.persistence.dynamodb.query.scaladsl.internal
 
 import akka.NotUsed
 import akka.persistence.dynamodb.journal.JournalKeys
-import akka.persistence.dynamodb.query.scaladsl.internal.DynamodbCurrentPersistenceIdsQuery.{
+import akka.persistence.dynamodb.query.scaladsl.internal.DynamoDBCurrentPersistenceIdsQuery.{
   RichNumber,
   RichString,
   SourceLazyOps
@@ -10,7 +10,7 @@ import akka.persistence.dynamodb.query.scaladsl.internal.DynamodbCurrentPersiste
 import akka.persistence.dynamodb.query.scaladsl.internal.PersistenceIdsResult.RichPersistenceIdsResult
 import akka.persistence.dynamodb.query.scaladsl.{
   CreatePersistenceIdsIndex,
-  DynamodbCurrentPersistenceIdsQuery => PublicDynamodbCurrentPersistenceIdsQuery
+  DynamoDBCurrentPersistenceIdsQuery => PublicDynamoDBCurrentPersistenceIdsQuery
 }
 import akka.persistence.dynamodb.query.{ ReadJournalSettingsProvider, RichOption }
 import akka.persistence.dynamodb.{ ActorSystemProvider, DynamoProvider, LoggingProvider }
@@ -22,7 +22,7 @@ import java.util
 import scala.concurrent.Future
 import scala.util.control.NonFatal
 
-trait DynamodbCurrentPersistenceIdsQuery extends PublicDynamodbCurrentPersistenceIdsQuery {
+trait DynamoDBCurrentPersistenceIdsQuery extends PublicDynamoDBCurrentPersistenceIdsQuery {
   self: ReadJournalSettingsProvider
     with DynamoProvider
     with ActorSystemProvider
@@ -175,7 +175,7 @@ trait DynamodbCurrentPersistenceIdsQuery extends PublicDynamodbCurrentPersistenc
     }
 }
 
-object DynamodbCurrentPersistenceIdsQuery {
+object DynamoDBCurrentPersistenceIdsQuery {
   implicit class RichString(val s: String) extends AnyVal {
     def toAttribute: AttributeValue = new AttributeValue().withS(s)
   }

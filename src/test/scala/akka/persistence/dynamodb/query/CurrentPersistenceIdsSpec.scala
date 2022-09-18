@@ -4,7 +4,7 @@ import akka.actor.ActorSystem
 import akka.persistence.JournalProtocol._
 import akka.persistence._
 import akka.persistence.dynamodb.journal.DynamoDBUtils
-import akka.persistence.dynamodb.query.scaladsl.{ CreatePersistenceIdsIndex, DynamodbReadJournal }
+import akka.persistence.dynamodb.query.scaladsl.{ CreatePersistenceIdsIndex, DynamoDBReadJournal }
 import akka.persistence.dynamodb.{ DynamoProvider, IntegSpec }
 import akka.persistence.query.PersistenceQuery
 import akka.stream.scaladsl.Sink
@@ -38,7 +38,7 @@ class CurrentPersistenceIdsSpec
   private implicit val materializer: Materializer = SystemMaterializer(system).materializer
   private lazy val journal                        = Persistence(system).journalFor("")
   private lazy val queries =
-    PersistenceQuery(system).readJournalFor[DynamodbReadJournal](DynamodbReadJournal.Identifier)
+    PersistenceQuery(system).readJournalFor[DynamoDBReadJournal](DynamoDBReadJournal.Identifier)
 
   "DynamoDB ReadJournal" must {
     val persistenceIds = (0 to 100).map(toPersistenceId)

@@ -4,21 +4,21 @@ import akka.actor.ExtendedActorSystem
 import akka.persistence.dynamodb._
 import akka.persistence.dynamodb.journal._
 import akka.persistence.dynamodb.query.scaladsl.internal.{
-  DynamodbCurrentEventsByPersistenceIdQuery => InternalDynamodbCurrentEventsByPersistenceIdQuery,
-  DynamodbCurrentPersistenceIdsQuery => InternalDynamodbCurrentPersistenceIdsQuery
+  DynamoDBCurrentEventsByPersistenceIdQuery => InternalDynamoDBCurrentEventsByPersistenceIdQuery,
+  DynamoDBCurrentPersistenceIdsQuery => InternalDynamoDBCurrentPersistenceIdsQuery
 }
-import akka.persistence.dynamodb.query.scaladsl.{ DynamodbReadJournal => PublicDynamodbReadJournal }
+import akka.persistence.dynamodb.query.scaladsl.{ DynamoDBReadJournal => PublicDynamoDBReadJournal }
 import akka.persistence.dynamodb.query.{ DynamoDBReadJournalConfig, ReadJournalSettingsProvider }
 import akka.persistence.query.scaladsl.ReadJournal
 import akka.serialization.{ Serialization, SerializationExtension }
 import akka.stream.{ Materializer, SystemMaterializer }
 import com.typesafe.config.Config
 
-class DynamodbReadJournal(config: Config, configPath: String)(implicit val system: ExtendedActorSystem)
+class DynamoDBReadJournal(config: Config, configPath: String)(implicit val system: ExtendedActorSystem)
     extends ReadJournal
-    with PublicDynamodbReadJournal
-    with InternalDynamodbCurrentEventsByPersistenceIdQuery
-    with InternalDynamodbCurrentPersistenceIdsQuery
+    with PublicDynamoDBReadJournal
+    with InternalDynamoDBCurrentEventsByPersistenceIdQuery
+    with InternalDynamoDBCurrentPersistenceIdsQuery
     with ReadJournalSettingsProvider
     with JournalSettingsProvider
     with DynamoProvider

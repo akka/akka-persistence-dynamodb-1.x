@@ -10,7 +10,7 @@ import com.amazonaws.services.dynamodbv2.model._
 
 import scala.concurrent.Future
 
-trait DynamodbCurrentPersistenceIdsQuery extends CurrentPersistenceIdsQuery {
+trait DynamoDBCurrentPersistenceIdsQuery extends CurrentPersistenceIdsQuery {
 
   /**
    * Same type of query as [[akka.persistence.query.scaladsl.PersistenceIdsQuery.persistenceIds()]] but the stream
@@ -47,7 +47,7 @@ trait CreatePersistenceIdsIndex {
   self: ReadJournalSettingsProvider with DynamoProvider =>
 
   /**
-   * Update the journal table to add the Global Secondary Index 'persistence-ids-idx' that's required by [[DynamodbCurrentPersistenceIdsQuery.currentPersistenceIdsByPageQuery]]
+   * Update the journal table to add the Global Secondary Index 'persistence-ids-idx' that's required by [[DynamoDBCurrentPersistenceIdsQuery.currentPersistenceIdsByPageQuery]]
    * @param alphabetically sort persistence ids
    */
   def createPersistenceIdsIndex(alphabetically: Boolean = false): Future[UpdateTableResult] =
@@ -60,7 +60,7 @@ trait CreatePersistenceIdsIndex {
 
 object CreatePersistenceIdsIndex {
 
-  /** required by [[DynamodbCurrentPersistenceIdsQuery.currentPersistenceIdsByPageQuery]] */
+  /** required by [[DynamoDBCurrentPersistenceIdsQuery.currentPersistenceIdsByPageQuery]] */
   def createPersistenceIdsIndexRequest(
       indexName: String,
       tableName: String,
@@ -82,7 +82,7 @@ object CreatePersistenceIdsIndex {
       .withAttributeDefinitions(new AttributeDefinition().withAttributeName("num").withAttributeType("N"))
   }
 
-  /** required by [[DynamodbCurrentPersistenceIdsQuery.currentPersistenceIdsAlphabeticallyByPageQuery]] */
+  /** required by [[DynamoDBCurrentPersistenceIdsQuery.currentPersistenceIdsAlphabeticallyByPageQuery]] */
   def createPersistenceIdsAlphabeticallyIndexRequest(indexName: String, tableName: String): UpdateTableRequest =
     createPersistenceIdsIndexRequest(indexName = indexName, tableName = tableName, alphabetically = true)
 }
