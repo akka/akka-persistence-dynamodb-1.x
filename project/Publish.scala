@@ -24,7 +24,7 @@ object Publish extends AutoPlugin {
     organizationName := "Typesafe Inc.",
     organizationHomepage := Some(url("http://www.typesafe.com")),
     licenses := Seq(("Apache License, Version 2.0", url("http://www.apache.org/licenses/LICENSE-2.0"))),
-    homepage := Some(url("https://github.com/akka/akka-persistence-dynamodb")),
+    homepage := Some(url("https://github.com/akka/akka-persistence-dynamodb-1.x")),
     publishMavenStyle := true,
     pomIncludeRepository := { x => false },
     defaultPublishTo := crossTarget.value / "repository")
@@ -35,7 +35,7 @@ object Publish extends AutoPlugin {
         <id>contributors</id>
         <name>Contributors</name>
         <email>akka-dev@googlegroups.com</email>
-        <url>https://github.com/akka/akka-persistence-dynamodb/graphs/contributors</url>
+        <url>https://github.com/akka/akka-persistence-dynamodb-1.x/graphs/contributors</url>
       </developer>
     </developers>
   }

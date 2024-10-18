@@ -1,6 +1,8 @@
 DynamoDBJournal for Akka Persistence
 ====================================
 
+**Version 2.x of the DynamoDB plugin is developed and maintained in https://github.com/akka/akka-persistence-dynamodb.**
+
 A replicated [Akka Persistence](http://doc.akka.io/docs/akka/2.4.0/scala/persistence.html) journal backed by
 [Amazon DynamoDB](http://aws.amazon.com/dynamodb/).
 
@@ -51,7 +53,7 @@ my-dynamodb-journal {                     # and add some overrides
 }
 ~~~
 
-For details on the endpoint URL please refer to the [DynamoDB documentation](http://docs.aws.amazon.com/general/latest/gr/rande.html#ddb_region). There are many more settings that can be used for fine-tuning and adapting this journal plugin to your use-case, please refer to the [reference.conf](https://github.com/akka/akka-persistence-dynamodb/blob/master/src/main/resources/reference.conf) file.
+For details on the endpoint URL please refer to the [DynamoDB documentation](http://docs.aws.amazon.com/general/latest/gr/rande.html#ddb_region). There are many more settings that can be used for fine-tuning and adapting this journal plugin to your use-case, please refer to the [reference.conf](https://github.com/akka/akka-persistence-dynamodb-1.x/blob/master/src/main/resources/reference.conf) file.
 
 Before you can use these settings you will have to create a table, e.g. using the AWS console, with the following schema:
 
@@ -226,4 +228,5 @@ Credits
 Support
 -------
 
-This project is *community maintained*. The Lightbend subscription does not cover support for this project.
+The 1.x version of this project is *not maintained*. The Lightbend subscription does not cover support for this project.
+Version 2.x of the DynamoDB plugin is developed and maintained in https://github.com/akka/akka-persistence-dynamodb.

@@ -3,8 +3,7 @@
 ## Infrastructure
 
 * [Typesafe Contributor License Agreement](http://www.typesafe.com/contribute/cla)
-* [Issue Tracker](https://github.com/akka/akka-persistence-dynamodb/issues)
-* [Travis CI](https://travis-ci.org/akka/akka-persistence-dynamodb)
+* [Issue Tracker](https://github.com/akka/akka-persistence-dynamodb-1.x/issues)
 
 # Typesafe Project & Developer Guidelines
 

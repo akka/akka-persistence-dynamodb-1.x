@@ -12,8 +12,8 @@ v 1.1.2 (v 1.2.0)
 
 This was supposed to be released as `v1.2.0` but was released as `v1.1.2` to maven. Sorry about that!
 
-* Use DynamoDB Query during journal replay - https://github.com/akka/akka-persistence-dynamodb/issues/106
-* Correct issue [#98](https://github.com/akka/akka-persistence-dynamodb/issues/98)
+* Use DynamoDB Query during journal replay - https://github.com/akka/akka-persistence-dynamodb-1.x/issues/106
+* Correct issue [#98](https://github.com/akka/akka-persistence-dynamodb-1.x/issues/98)
   Please see [fixes in `reference.conf`](blob/master/src/main/resources/reference.conf) for a workaround for systems impacted by this issues.
 * Depends on Akka 2.5.
 * Adds Support for the Async Serializers - which enables the use of the plugin with Lightbend extensions [GDPR Addons](https://developer.lightbend.com/docs/akka-commercial-addons/current/gdpr/index.html)
